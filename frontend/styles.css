@@ -1,0 +1,137 @@
+:root{
+  --bg:#0f1115;
+  --card:#161a22;
+  --text:#e6eaf2;
+  --muted:#98a2b3;
+  --accent:#7dd3fc;
+  --ok:#34d399;
+  --warn:#f59e0b;
+  --err:#ef4444;
+}
+
+*{ box-sizing:border-box }
+
+body{
+  margin:0;
+  background:var(--bg);
+  color:var(--text);
+  font:16px/1.4 system-ui,Segoe UI,Roboto;
+}
+
+.container{
+  max-width:980px;
+  margin:32px auto;
+  padding:0 16px;
+}
+
+h1{
+  font-size:28px;
+  margin-bottom:16px;
+}
+
+.card{
+  background:var(--card);
+  padding:16px;
+  border-radius:16px;
+  box-shadow:0 0 0 1px #222;
+  position:relative;
+}
+
+.card+.card{ margin-top:16px }
+
+h2{ margin-top:0 }
+
+input,textarea,button{
+  width:100%;
+  margin:6px 0;
+  padding:10px;
+  border-radius:10px;
+  border:1px solid #2a2f3a;
+  background:#0b0e14;
+  color:var(--text);
+}
+
+textarea{
+  min-height:80px;
+  resize:vertical;
+}
+
+button{
+  cursor:pointer;
+  border:1px solid #2b3342;
+}
+
+button:hover{
+  border-color:#3f4657;
+}
+
+.row{
+  display:flex;
+  gap:8px;
+}
+
+.row > *{
+  flex:1;
+}
+
+.muted{
+  color:var(--muted);
+  font-size:14px;
+}
+
+.badge{
+  padding:2px 8px;
+  border-radius:999px;
+  font-size:12px;
+  border:1px solid #334;
+}
+
+.badge.ok{ color:var(--ok); border-color:var(--ok); }
+.badge.warn{ color:var(--warn); border-color:var(--warn); }
+.badge.err{ color:var(--err); border-color:var(--err); }
+
+.entry{
+  display:grid;
+  grid-template-columns:1fr auto;
+  gap:8px;
+  padding:10px;
+  border-bottom:1px solid #222;
+}
+
+.entry h3{ margin:0; }
+.entry small{ color:var(--muted); }
+.entry .actions{ display:flex; gap:6px; }
+
+/* ===== Control de visibilidad por sesión ===== */
+.protected{ display:block; }
+body:not(.auth-ok) .protected{ display:none !important; }
+
+/* ===== Campos de contraseña con ojito ===== */
+.password-field{ position:relative; overflow:hidden; }
+.password-field input{ padding-right:44px; }
+.eye-btn{
+  position:absolute;
+  right:10px;
+  top:50%;
+  transform:translateY(-50%);
+  background:transparent;
+  border:0;
+  cursor:pointer;
+  font-size:16px;
+  color:var(--muted);
+  z-index:1;
+}
+.eye-btn:hover{ color:var(--text); }
+
+/* ===== Colores para el medidor de fuerza ===== */
+.str-weak{ color:var(--err); }
+.str-mid{ color:var(--warn); }
+.str-strong{ color:var(--ok); }
+
+/* ===== Ocultamiento genérico ===== */
+.hidden{ display:none !important; }
+#vsecretStrength{
+  white-space: pre-line;   /* respeta \n */
+  margin-top: 6px;
+  font-size: .9em;
+}
