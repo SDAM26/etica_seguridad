@@ -11,7 +11,7 @@ Permite almacenar, cifrar, gestionar y recuperar credenciales de forma segura, a
 
 ### 2.1 Backend (FastAPI – Python)
 - API REST desarrollada con **FastAPI**.  
-- Persistencia de datos con **SQLite (SQLAlchemy)**.  
+- Persistencia de datos con **SQLite**.  
 - Autenticación mediante **JWT** con expiración configurable.  
 - Cifrado de datos con **AES-256-GCM**.  
 - Derivación de claves con **PBKDF2** y **HKDF**.
