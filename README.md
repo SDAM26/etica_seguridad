@@ -1,4 +1,4 @@
-# 🧩 Proyecto: Password Manager Seguro
+# Proyecto: Password Manager
 
 ## 1. Descripción General
 
