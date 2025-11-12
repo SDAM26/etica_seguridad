@@ -1,0 +1,97 @@
+<!doctype html>
+<html lang="es">
+<head>
+  <meta charset="utf-8"/>
+  <title>Seguridad — Password Manager</title>
+  <meta name="viewport" content="width=device-width, initial-scale=1"/>
+  <link rel="stylesheet" href="styles.css"/>
+</head>
+<body>
+  <div class="container">
+    <h1>🔐 Password Manager</h1>
+
+    <!-- =================== AUTENTICACIÓN =================== -->
+    <section id="auth">
+      <div class="card">
+        <h2>Acceso</h2>
+        <input id="email" placeholder="email" type="email"/>
+
+        <!-- Password de login con ojito propio -->
+        <div class="password-field">
+          <input id="password" placeholder="contraseña de acceso" type="password" autocomplete="current-password"/>
+          <button id="toggleLoginPwd" class="eye-btn" type="button" aria-label="Mostrar/ocultar">👁️</button>
+        </div>
+
+        <button id="btnRegister">Registrar</button>
+        <button id="btnLogin">Iniciar sesión</button>
+        <p id="authMsg"></p>
+        <button id="btnLogout" style="display:none;">Cerrar sesión</button>
+      </div>
+
+      <!-- Esta tarjeta debe mostrarse SOLO con sesión -->
+      <div class="card protected" id="cardSecret">
+        <h2>Contraseña Maestra y Secreto de Dispositivo</h2>
+        <input id="master" placeholder="contraseña maestra" type="password" autocomplete="new-password"/>
+        <div class="row">
+          <button id="btnCreateSecret">Crear Secreto</button>
+          <button id="btnExportSecret">Exportar</button>
+          <input id="secretFile" type="file" style="display:none"/>
+          <button id="btnImportSecret">Importar</button>
+        </div>
+        <p class="muted">Usa la misma MP y el mismo secreto en otro puerto/dispositivo para ver tus entradas.</p>
+        <p id="kmixInfo"></p>
+      </div>
+    </section>
+
+    <!-- =================== GENERADOR =================== -->
+    <section id="tools" class="protected">
+      <div class="card">
+        <h2>Generador</h2>
+        <input id="genLen" type="number" min="8" max="128" value="20"/>
+        <label><input id="genSym" type="checkbox" checked/> usar símbolos</label>
+        <button id="btnGen">Generar</button>
+
+        <!-- Campo enmascarado con ojito -->
+        <div class="password-field">
+          <input id="genOut" type="password" readonly/>
+          <button id="toggleGenOut" class="eye-btn" type="button" aria-label="Mostrar/ocultar">👁️</button>
+        </div>
+
+        <!-- Acciones sobre el generado -->
+        <div class="row">
+          <button id="btnCopyGen">Copiar</button>
+          <button id="btnUseGen">Usar en “Contraseña”</button>
+        </div>
+
+        <button id="btnScore">Calificar</button>
+        <span id="scoreOut"></span>
+      </div>
+    </section>
+
+    <!-- =================== VAULT =================== -->
+    <section id="vault" class="protected">
+      <div class="card">
+        <h2>Nueva entrada</h2>
+        <input id="title" placeholder="Título (p.ej. Gmail)"/>
+        <input id="vuser" placeholder="Usuario"/>
+        <input id="vurl" placeholder="URL"/>
+        <textarea id="vnote" placeholder="Nota (opcional)"></textarea>
+
+       <div class="password-field">
+          <input id="vsecret" type="password" placeholder="Secreto/Contraseña" autocomplete="new-password"/>
+          <button id="toggleVSecret" class="eye-btn" type="button" aria-label="Mostrar/ocultar">👁️</button>
+        </div>
+        <div id="vsecretStrength" class="muted"></div>
+
+        <button id="btnCreate">Guardar</button>
+      </div>
+
+      <div class="card">
+        <h2>Mis entradas</h2>
+        <div id="entries"></div>
+      </div>
+    </section>
+  </div>
+  <script src="app.js"></script>
+</body>
+</html>
