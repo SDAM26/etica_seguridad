@@ -361,6 +361,14 @@
                     <!-- Mis Entradas -->
                     <div class="bg-surface-dark rounded-xl p-6">
                         <h2 class="text-white text-lg font-bold mb-6">Mis entradas</h2>
+
+                        <!-- Buscador -->
+                        <div class="flex items-center gap-2 mb-4 bg-background-dark rounded-lg border border-border-dark px-4 py-3">
+                            <span class="material-symbols-outlined text-text-secondary-dark">search</span>
+                            <input id="vault-search" type="text" placeholder="Buscar por título..."
+                                   class="flex-1 bg-transparent text-white focus:outline-none placeholder:text-text-secondary-dark"/>
+                        </div>
+
                         <div id="entries-list" class="flex flex-col space-y-4">
                             <!-- Se llenará dinámicamente -->
                         </div>

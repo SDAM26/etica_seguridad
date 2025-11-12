@@ -375,6 +375,22 @@ document.getElementById("btn-goto-vault").onclick = () => {
 document.getElementById("btn-back-from-gen").onclick = () => showView('view-master');
 document.getElementById("btn-back-from-vault").onclick = () => showView('view-master');
 
+// Vault search functionality
+document.getElementById("vault-search")?.addEventListener("input", (e) => {
+    const searchTerm = e.target.value.toLowerCase().trim();
+    const entriesList = document.getElementById("entries-list");
+    if (!entriesList) return;
+
+    const entries = entriesList.querySelectorAll("div.flex.items-center.p-4");
+    entries.forEach(entryDiv => {
+        const titleElement = entryDiv.querySelector(".text-white.text-base.font-medium");
+        if (titleElement) {
+            const title = titleElement.textContent.toLowerCase();
+            entryDiv.style.display = title.includes(searchTerm) ? "flex" : "none";
+        }
+    });
+});
+
 /* ===== Password Generator ===== */
 // Sync slider and number input
 const genLengthRange = document.getElementById("gen-length-range");
