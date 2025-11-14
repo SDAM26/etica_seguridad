@@ -108,6 +108,21 @@
             box-shadow: 0 20px 60px rgba(0, 0, 0, 0.5);
             animation: scaleIn 0.2s ease-out;
         }
+        
+        /* Ocultar modal de webcam por defecto */
+        #webcam-modal {
+            display: none;
+        }
+        /* Estilo del video de la webcam */
+        #webcam-video {
+            width: 100%;
+            height: auto;
+            border-radius: 8px;
+            transform: scaleX(-1); /* Espejar la cámara */
+        }
+        #webcam-canvas {
+            display: none; /* El canvas está oculto, solo se usa para tomar la foto */
+        }
 
         @keyframes fadeIn {
             from { opacity: 0; }
@@ -162,7 +177,7 @@
                                 <span>Iniciar sesión</span>
                             </button>
                             <button id="btn-register" type="button" class="flex h-12 cursor-pointer items-center justify-center rounded-lg border border-border-dark bg-transparent px-5 text-base font-bold text-text-secondary-dark transition-colors hover:bg-white/5 hover:text-white">
-                                <span>Registrar</span>
+                                <span>Registrar (con foto)</span>
                             </button>
                         </div>
                     </form>
@@ -360,7 +375,16 @@
 
                     <!-- Mis Entradas -->
                     <div class="bg-surface-dark rounded-xl p-6">
-                        <h2 class="text-white text-lg font-bold mb-6">Mis entradas</h2>
+                        <!-- ===== NUEVO: CABECERA DE MIS ENTRADAS ===== -->
+                        <div class="flex items-center justify-between mb-6">
+                            <h2 class="text-white text-lg font-bold">Mis entradas</h2>
+                            <button id="btn-unlock-vault" class="flex items-center gap-2 px-3 py-2 rounded-lg bg-surface-dark border border-border-dark text-white hover:bg-white/10 transition-colors text-sm">
+                                <span class="material-symbols-outlined text-base">visibility_off</span>
+                                <span>Desbloquear</span>
+                            </button>
+                        </div>
+                        <!-- ===== FIN NUEVA CABECERA ===== -->
+
 
                         <!-- Buscador -->
                         <div class="flex items-center gap-2 mb-4 bg-background-dark rounded-lg border border-border-dark px-4 py-3">
@@ -368,10 +392,20 @@
                             <input id="vault-search" type="text" placeholder="Buscar por título..."
                                    class="flex-1 bg-transparent text-white focus:outline-none placeholder:text-text-secondary-dark"/>
                         </div>
-
-                        <div id="entries-list" class="flex flex-col space-y-4">
-                            <!-- Se llenará dinámicamente -->
+                        
+                        <!-- ===== NUEVO: CONTENEDOR CON OVERLAY ===== -->
+                        <div class="relative">
+                            <div id="vault-locked-overlay" class="absolute inset-0 bg-surface-dark/90 backdrop-blur-sm flex flex-col items-center justify-center rounded-lg z-10 min-h-[200px]">
+                                <span class="material-symbols-outlined text-5xl text-text-secondary-dark">lock</span>
+                                <p class="mt-4 text-white font-medium">Bóveda bloqueada</p>
+                                <p class="text-sm text-text-secondary-dark">Haz clic en "Desbloquear" para ver.</p>
+                            </div>
+                            <div id="entries-list" class="flex flex-col space-y-4 min-h-[200px]">
+                                <!-- Se llenará dinámicamente -->
+                            </div>
                         </div>
+                        <!-- ===== FIN CONTENEDOR CON OVERLAY ===== -->
+
                     </div>
                 </div>
             </div>
@@ -380,6 +414,33 @@
 
     <!-- Toast Container -->
     <div id="toast-container"></div>
+
+    <!-- ===== MODAL DE WEBCAM (Sin cambios) ===== -->
+    <div id="webcam-modal" class="modal-overlay">
+        <div class="modal-content">
+            <div class="flex items-center justify-between mb-4">
+                <h2 id="webcam-title" class="text-white text-xl font-bold">Verificación Facial</h2>
+                <button id="webcam-close" class="text-text-secondary-dark hover:text-white transition-colors">
+                    <span class="material-symbols-outlined">close</span>
+                </button>
+            </div>
+            <div class="modal-body text-text-primary-dark mb-6 space-y-4">
+                <p id="webcam-message" class="text-center text-text-secondary-dark">Centra tu rostro en el recuadro.</p>
+                <!-- Contenedor para la cámara -->
+                <div class="bg-background-dark rounded-lg overflow-hidden border border-border-dark">
+                    <video id="webcam-video" autoplay playsinline></video>
+                </div>
+                <!-- Canvas oculto para tomar la foto -->
+                <canvas id="webcam-canvas"></canvas>
+            </div>
+            <div class="flex gap-3">
+                 <button id="webcam-snapshot" class="flex-1 h-12 px-4 bg-primary text-white rounded-lg font-bold hover:opacity-90 transition-opacity">
+                    Tomar Foto
+                </button>
+            </div>
+        </div>
+    </div>
+    <!-- ===== FIN MODAL WEBCAM ===== -->
 
     <script src="app.js"></script>
 </body>

@@ -8,6 +8,8 @@ const API = (location.origin.includes("localhost") || location.origin.includes("
 let token = null;
 let salt_user_b64u = null;
 let generatedPassword = ""; // Para "Usar en Vault"
+let g_webcamStream = null; // Stream global de la webcam
+let isVaultUnlocked = false; // <-- NUEVO ESTADO: Controla si la bóveda está desbloqueada
 
 /* ===== View Management (SPA Routing) ===== */
 function showView(viewId) {
@@ -124,16 +126,25 @@ async function api(path, method = "GET", body = null, useKmix = false) {
         if (!kmix) throw new Error("K_mix no disponible");
         headers["X-Kmix-B64u"] = kmix;
     }
-    const res = await fetch(`${API}${path}`, {
-        method,
-        headers,
-        body: body ? JSON.stringify(body) : undefined
-    });
-    if (!res.ok) {
-        const t = await res.text();
-        throw new Error(`${res.status} ${t}`);
+    
+    document.body.style.cursor = 'wait';
+
+    try {
+        const res = await fetch(`${API}${path}`, {
+            method,
+            headers,
+            body: body ? JSON.stringify(body) : undefined
+        });
+        if (!res.ok) {
+            const t = await res.text();
+            throw new Error(`${res.status} ${t}`);
+        }
+        return res.json();
+    } catch (e) {
+        throw e;
+    } finally {
+        document.body.style.cursor = 'default';
     }
-    return res.json();
 }
 
 /* ===== UI Helpers - Toast Notifications ===== */
@@ -168,11 +179,9 @@ function showToast(message, type = "info", duration = 3000) {
 
     container.appendChild(toast);
 
-    // Close button
     const closeBtn = toast.querySelector(".toast-close");
     closeBtn.onclick = () => removeToast(toast);
 
-    // Auto remove
     setTimeout(() => removeToast(toast), duration);
 }
 
@@ -191,7 +200,6 @@ function showMessage(text, type = "info") {
 
 /* ===== Modal System ===== */
 function showModal(title, content, buttons = []) {
-    // Remove existing modal
     const existingModal = document.querySelector(".modal-overlay");
     if (existingModal) existingModal.remove();
 
@@ -232,7 +240,6 @@ function showModal(title, content, buttons = []) {
 
     document.body.appendChild(modal);
 
-    // Close handlers
     const closeModal = () => modal.remove();
     modal.onclick = (e) => {
         if (e.target === modal) closeModal();
@@ -244,7 +251,6 @@ function showModal(title, content, buttons = []) {
         };
     });
 
-    // Custom button handlers
     buttons.forEach(btn => {
         const btnEl = modal.querySelector(`.modal-btn-${btn.action}`);
         if (btnEl && btn.handler) {
@@ -288,22 +294,106 @@ function setupPasswordToggle(toggleBtnId, inputId) {
     };
 }
 
+/* ===== Webcam Functions ===== */
+async function startWebcam(videoEl) {
+    if (g_webcamStream) {
+        g_webcamStream.getTracks().forEach(track => track.stop());
+    }
+    try {
+        g_webcamStream = await navigator.mediaDevices.getUserMedia({ 
+            video: { width: 640, height: 480 }, 
+            audio: false 
+        });
+        videoEl.srcObject = g_webcamStream;
+        videoEl.play();
+    } catch (err) {
+        console.error("Error al acceder a la webcam: ", err);
+        showToast("No se pudo acceder a la cámara. Revisa los permisos.", "error");
+    }
+}
+
+function stopWebcam() {
+    if (g_webcamStream) {
+        g_webcamStream.getTracks().forEach(track => track.stop());
+        g_webcamStream = null;
+    }
+}
+
+function takeSnapshot(videoEl, canvasEl) {
+    const context = canvasEl.getContext('2d');
+    canvasEl.width = videoEl.videoWidth;
+    canvasEl.height = videoEl.videoHeight;
+    
+    context.translate(canvasEl.width, 0);
+    context.scale(-1, 1);
+    
+    context.drawImage(videoEl, 0, 0, canvasEl.width, canvasEl.height);
+    
+    context.setTransform(1, 0, 0, 1, 0, 0);
+    
+    return canvasEl.toDataURL('image/jpeg', 0.9);
+}
+
+function showWebcamModal(title, message, onSnapshot) {
+    const modal = document.getElementById('webcam-modal');
+    const videoEl = document.getElementById('webcam-video');
+    const canvasEl = document.getElementById('webcam-canvas');
+    const closeBtn = document.getElementById('webcam-close');
+    const snapshotBtn = document.getElementById('webcam-snapshot');
+    
+    document.getElementById('webcam-title').textContent = title;
+    document.getElementById('webcam-message').textContent = message;
+
+    modal.style.display = 'flex';
+    startWebcam(videoEl);
+
+    const closeModal = () => {
+        modal.style.display = 'none';
+        stopWebcam();
+    };
+
+    closeBtn.onclick = closeModal;
+
+    // Asignar el evento onclick una sola vez
+    snapshotBtn.onclick = () => {
+        const dataUrl = takeSnapshot(videoEl, canvasEl);
+        closeModal();
+        if (onSnapshot) {
+            onSnapshot(dataUrl);
+        }
+    };
+}
+
 /* ===== Authentication ===== */
 document.getElementById("btn-register").onclick = async () => {
-    try {
-        const email = document.getElementById("email").value.trim();
-        const password = document.getElementById("password").value;
-        if (!email || !password) return showMessage("Por favor completa los campos", "error");
+    const email = document.getElementById("email").value.trim();
+    const password = document.getElementById("password").value;
+    if (!email || !password) return showMessage("Por favor completa email y contraseña", "error");
 
-        const r = await api("/auth/register", "POST", { email, password });
-        token = r.access_token;
-        const me = await api("/auth/me");
-        salt_user_b64u = me.salt_user_b64u;
-        showMessage("Registrado y logueado exitosamente ✅", "success");
-        setTimeout(() => setAuthUI(true), 1000);
-    } catch (e) {
-        showMessage("Error: " + e.message, "error");
-    }
+    showWebcamModal(
+        "Foto de Registro",
+        "Toma una foto clara de tu rostro para el registro.",
+        async (imageDataUrl) => {
+            try {
+                showMessage("Registrando y procesando rostro...", "info");
+                const r = await api("/auth/register", "POST", { 
+                    email, 
+                    password,
+                    image_data_url: imageDataUrl
+                });
+                
+                token = r.access_token;
+                const me = await api("/auth/me");
+                salt_user_b64u = me.salt_user_b64u;
+                
+                showMessage("Registrado y logueado exitosamente ✅", "success");
+                setTimeout(() => setAuthUI(true), 1000);
+            
+            } catch (e) {
+                showMessage("Error: " + e.message, "error");
+            }
+        }
+    );
 };
 
 document.getElementById("btn-login").onclick = async () => {
@@ -323,23 +413,27 @@ document.getElementById("btn-login").onclick = async () => {
     }
 };
 
+function performLogout() {
+    token = null;
+    salt_user_b64u = null;
+    isVaultUnlocked = false; // <-- Bloquear la bóveda al salir
+
+    ["email", "password", "master", "vault-title", "vault-username", "vault-url", "vault-secret", "vault-note", "gen-output"].forEach(id => {
+        const el = document.getElementById(id);
+        if (el) el.value = "";
+    });
+
+    setAuthUI(false);
+    showMessage("Sesión cerrada correctamente", "success");
+    showToast("Sesión cerrada correctamente", "success");
+}
+
 document.getElementById("btn-logout").onclick = () => {
     showConfirm(
         "Cerrar sesión",
         "¿Seguro que deseas cerrar sesión?",
         () => {
-            token = null;
-            salt_user_b64u = null;
-
-            // Clear all form inputs
-            ["email", "password", "master", "vault-title", "vault-username", "vault-url", "vault-secret", "vault-note", "gen-output"].forEach(id => {
-                const el = document.getElementById(id);
-                if (el) el.value = "";
-            });
-
-            setAuthUI(false);
-            showMessage("Sesión cerrada correctamente", "success");
-            showToast("Sesión cerrada correctamente", "success");
+            performLogout();
         }
     );
 };
@@ -350,28 +444,29 @@ document.getElementById("btn-create-secret").onclick = () => {
     showToast("Secreto creado (o ya existía).", "success");
     computeKmix();
 };
-
 document.getElementById("btn-export-secret").onclick = exportSecret;
-
 document.getElementById("btn-import-secret").onclick = () => {
     document.getElementById("secret-file").click();
 };
-
 document.getElementById("secret-file").onchange = (ev) => {
     if (ev.target.files[0]) importSecret(ev.target.files[0]);
 };
-
-// Auto-compute K_mix when master password changes
 document.getElementById("master")?.addEventListener("input", () => {
     computeKmix();
 });
 
 /* ===== Navigation Buttons ===== */
 document.getElementById("btn-goto-generator").onclick = () => showView('view-generator');
+
+// ===== CAMBIO 1: Adjuntar listener de desbloqueo al ir al vault =====
 document.getElementById("btn-goto-vault").onclick = () => {
     showView('view-vault');
-    loadEntries();
+    loadEntries(); // Carga las entradas (y las muestra bloqueadas)
+    // Adjuntamos el listener CADA VEZ que se entra a esta vista
+    document.getElementById("btn-unlock-vault").onclick = handleVaultUnlockRequest;
 };
+// ===============================================================
+
 document.getElementById("btn-back-from-gen").onclick = () => showView('view-master');
 document.getElementById("btn-back-from-vault").onclick = () => showView('view-master');
 
@@ -392,17 +487,10 @@ document.getElementById("vault-search")?.addEventListener("input", (e) => {
 });
 
 /* ===== Password Generator ===== */
-// Sync slider and number input
 const genLengthRange = document.getElementById("gen-length-range");
 const genLengthInput = document.getElementById("gen-length");
-
-genLengthRange.oninput = () => {
-    genLengthInput.value = genLengthRange.value;
-};
-
-genLengthInput.oninput = () => {
-    genLengthRange.value = genLengthInput.value;
-};
+genLengthRange.oninput = () => { genLengthInput.value = genLengthRange.value; };
+genLengthInput.oninput = () => { genLengthRange.value = genLengthInput.value; };
 
 document.getElementById("btn-generate").onclick = async () => {
     try {
@@ -413,7 +501,6 @@ document.getElementById("btn-generate").onclick = async () => {
         generatedPassword = r.password || "";
         document.getElementById("gen-output").value = generatedPassword;
 
-        // Update score display
         const scoreLabel = document.getElementById("score-label");
         if (scoreLabel) {
             const colors = { weak: "text-error", medium: "text-warning", strong: "text-success" };
@@ -434,14 +521,21 @@ document.getElementById("btn-copy-gen").onclick = async () => {
     showToast("Copiado al portapapeles ✅", "success");
 };
 
+// ===== CAMBIO 2: Adjuntar listener de desbloqueo también aquí =====
 document.getElementById("btn-use-gen").onclick = () => {
     const val = document.getElementById("gen-output").value || "";
     if (!val) return showToast("Primero genera una contraseña", "warning");
     showView('view-vault');
+
+    // Adjuntamos el listener CADA VEZ que se entra a esta vista
+    document.getElementById("btn-unlock-vault").onclick = handleVaultUnlockRequest;
+    // NOTA: No llamamos a loadEntries() para no limpiar el formulario
+    
     document.getElementById("vault-secret").value = val;
     updateVaultSecretStrength(val);
     showToast("Contraseña copiada al formulario", "success");
 };
+// =============================================================
 
 /* ===== Vault - Password Strength Monitor ===== */
 let secretDebounce;
@@ -476,14 +570,12 @@ document.getElementById("vault-secret")?.addEventListener("input", (e) => {
 
 /* ===== Vault - Cancel Edit ===== */
 document.getElementById("btn-cancel-edit").onclick = () => {
-    // Clear form
     ["vault-title", "vault-username", "vault-url", "vault-secret", "vault-note"].forEach(id => {
         const el = document.getElementById(id);
         if (el) el.value = "";
     });
     updateVaultSecretStrength("");
 
-    // Reset button state
     const saveBtn = document.getElementById("btn-save-entry");
     const cancelBtn = document.getElementById("btn-cancel-edit");
     saveBtn.querySelector("span").textContent = "Guardar";
@@ -514,24 +606,20 @@ document.getElementById("btn-save-entry").onclick = async () => {
         }
 
         if (isEditing) {
-            // Update existing entry
             await api(`/vault/${editId}`, "PUT", data, true);
             showToast("Entrada actualizada exitosamente ✅", "success");
-            // Reset button state
             saveBtn.querySelector("span").textContent = "Guardar";
             delete saveBtn.dataset.editId;
             const cancelBtn = document.getElementById("btn-cancel-edit");
             cancelBtn.classList.add("hidden");
             cancelBtn.classList.remove("flex");
         } else {
-            // Create new entry
             await api("/vault", "POST", data, true);
             showToast("Entrada guardada exitosamente ✅", "success");
         }
 
-        loadEntries();
+        loadEntries(); // <-- Recarga la lista (y la vuelve a bloquear)
 
-        // Clear form
         ["vault-title", "vault-username", "vault-url", "vault-secret", "vault-note"].forEach(id => {
             const el = document.getElementById(id);
             if (el) el.value = "";
@@ -544,7 +632,14 @@ document.getElementById("btn-save-entry").onclick = async () => {
 
 /* ===== Vault - Load Entries ===== */
 async function loadEntries() {
+    isVaultUnlocked = false;
+    document.getElementById('vault-locked-overlay').style.display = 'flex';
+    document.getElementById('btn-unlock-vault').innerHTML = `
+        <span class="material-symbols-outlined text-base">visibility_off</span>
+        <span>Desbloquear</span>`;
+    
     if (!token) return;
+
     try {
         const rows = await api("/vault", "GET");
         const box = document.getElementById("entries-list");
@@ -558,6 +653,8 @@ async function loadEntries() {
                     <p class="text-sm text-text-secondary-dark">Crea una nueva entrada para empezar.</p>
                 </div>
             `;
+            // Asegurarse de que el overlay de "bloqueado" no tape el mensaje de "vacío"
+            document.getElementById('vault-locked-overlay').style.display = 'none';
             return;
         }
 
@@ -585,125 +682,154 @@ async function loadEntries() {
             box.appendChild(div);
         });
 
-        // Attach event listeners
-        box.querySelectorAll(".btn-view").forEach(btn => {
-            btn.onclick = async () => {
-                try {
-                    const id = btn.getAttribute("data-id");
-                    const r = await api(`/vault/${id}`, "GET", null, true);
-
-                    // Create modal content with password toggle
-                    const passwordId = `pwd-${id}`;
-                    const content = `
-                        <div class="space-y-4">
-                            <div class="bg-background-dark p-4 rounded-lg border border-border-dark">
-                                <p class="text-text-secondary-dark text-xs mb-2">CONTRASEÑA</p>
-                                <div class="flex items-center gap-2">
-                                    <p id="${passwordId}" class="text-white text-lg font-mono flex-1 break-all">••••••••••••</p>
-                                    <button onclick="
-                                        const el = document.getElementById('${passwordId}');
-                                        const btn = this;
-                                        const icon = btn.querySelector('.material-symbols-outlined');
-                                        if (el.textContent === '••••••••••••') {
-                                            el.textContent = '${r.secret_plain.replace(/'/g, "\\'")}';
-                                            icon.textContent = 'visibility_off';
-                                        } else {
-                                            el.textContent = '••••••••••••';
-                                            icon.textContent = 'visibility';
-                                        }
-                                    " class="p-2 rounded-lg bg-surface-dark border border-border-dark text-text-secondary-dark hover:text-white transition-colors">
-                                        <span class="material-symbols-outlined" style="font-size: 20px;">visibility</span>
-                                    </button>
-                                    <button onclick="navigator.clipboard.writeText('${r.secret_plain.replace(/'/g, "\\'")}'); showToast('Contraseña copiada', 'success');" class="p-2 rounded-lg bg-primary/20 text-primary hover:bg-primary/30 transition-colors">
-                                        <span class="material-symbols-outlined" style="font-size: 20px;">content_copy</span>
-                                    </button>
-                                </div>
-                            </div>
-                            ${r.username ? `
-                            <div>
-                                <p class="text-text-secondary-dark text-xs mb-1">USUARIO</p>
-                                <p class="text-white">${r.username}</p>
-                            </div>` : ''}
-                            ${r.url ? `
-                            <div>
-                                <p class="text-text-secondary-dark text-xs mb-1">URL</p>
-                                <a href="${r.url}" target="_blank" class="text-primary hover:underline break-all">${r.url}</a>
-                            </div>` : ''}
-                            ${r.note ? `
-                            <div>
-                                <p class="text-text-secondary-dark text-xs mb-1">NOTA</p>
-                                <p class="text-white whitespace-pre-wrap">${r.note}</p>
-                            </div>` : ''}
-                        </div>
-                    `;
-
-                    showModal(`🔐 ${r.title}`, content);
-                } catch (e) {
-                    showToast("Error: " + e.message, "error");
-                }
-            };
-        });
-
-        // Edit button
-        box.querySelectorAll(".btn-edit").forEach(btn => {
-            btn.onclick = async () => {
-                try {
-                    const id = btn.getAttribute("data-id");
-                    const r = await api(`/vault/${id}`, "GET", null, true);
-
-                    // Fill form with existing data
-                    document.getElementById("vault-title").value = r.title || "";
-                    document.getElementById("vault-username").value = r.username || "";
-                    document.getElementById("vault-url").value = r.url || "";
-                    document.getElementById("vault-note").value = r.note || "";
-                    document.getElementById("vault-secret").value = r.secret_plain || "";
-
-                    // Update strength indicator
-                    updateVaultSecretStrength(r.secret_plain || "");
-
-                    // Scroll to form
-                    document.getElementById("vault-title").scrollIntoView({ behavior: "smooth", block: "center" });
-
-                    // Change save button to update mode
-                    const saveBtn = document.getElementById("btn-save-entry");
-                    const cancelBtn = document.getElementById("btn-cancel-edit");
-                    saveBtn.querySelector("span").textContent = "Actualizar";
-                    saveBtn.dataset.editId = id;
-                    cancelBtn.classList.remove("hidden");
-                    cancelBtn.classList.add("flex");
-
-                    showToast("Editando entrada - Modifica los campos y haz clic en Actualizar", "info", 4000);
-                } catch (e) {
-                    showToast("Error: " + e.message, "error");
-                }
-            };
-        });
-
-        box.querySelectorAll(".btn-delete").forEach(btn => {
-            btn.onclick = async () => {
-                try {
-                    const id = btn.getAttribute("data-id");
-                    showConfirm(
-                        "Eliminar entrada",
-                        "¿Estás seguro de que deseas eliminar esta entrada? Esta acción no se puede deshacer.",
-                        async () => {
-                            try {
-                                await api(`/vault/${id}`, "DELETE");
-                                loadEntries();
-                                showToast("Entrada eliminada exitosamente", "success");
-                            } catch (e) {
-                                showToast("Error: " + e.message, "error");
-                            }
-                        }
-                    );
-                } catch (e) {
-                    showToast("Error: " + e.message, "error");
-                }
-            };
-        });
+        attachEntryListeners(box);
+        
     } catch (e) {
         console.error("Error loading entries:", e);
     }
+}
+
+/**
+ * Adjunta los listeners a los botones de las entradas.
+ */
+function attachEntryListeners(box) {
+    // --- Listener para VER ---
+    box.querySelectorAll(".btn-view").forEach(btn => {
+        btn.onclick = async () => {
+            if (!isVaultUnlocked) {
+                return showToast("Debes desbloquear la bóveda primero", "warning");
+            }
+            try {
+                const id = btn.getAttribute("data-id");
+                const r = await api(`/vault/${id}`, "GET", null, true); // true = usa K_mix
+                
+                const passwordId = `pwd-${id}`;
+                const content = `
+                    <div class="space-y-4">
+                        <div class="bg-background-dark p-4 rounded-lg border border-border-dark">
+                            <p class="text-text-secondary-dark text-xs mb-2">CONTRASEÑA</p>
+                            <div class="flex items-center gap-2">
+                                <p id="${passwordId}" class="text-white text-lg font-mono flex-1 break-all">••••••••••••</p>
+                                <button onclick="
+                                    const el = document.getElementById('${passwordId}');
+                                    const btn = this;
+                                    const icon = btn.querySelector('.material-symbols-outlined');
+                                    if (el.textContent === '••••••••••••') {
+                                        el.textContent = '${r.secret_plain.replace(/'/g, "\\'")}';
+                                        icon.textContent = 'visibility_off';
+                                    } else {
+                                        el.textContent = '••••••••••••';
+                                        icon.textContent = 'visibility';
+                                    }
+                                " class="p-2 rounded-lg bg-surface-dark border border-border-dark text-text-secondary-dark hover:text-white transition-colors">
+                                    <span class="material-symbols-outlined" style="font-size: 20px;">visibility</span>
+                                </button>
+                                <button onclick="navigator.clipboard.writeText('${r.secret_plain.replace(/'/g, "\\'")}'); showToast('Contraseña copiada', 'success');" class="p-2 rounded-lg bg-primary/20 text-primary hover:bg-primary/30 transition-colors">
+                                    <span class="material-symbols-outlined" style="font-size: 20px;">content_copy</span>
+                                </button>
+                            </div>
+                        </div>
+                        ${r.username ? `<div><p class="text-text-secondary-dark text-xs mb-1">USUARIO</p><p class="text-white">${r.username}</p></div>` : ''}
+                        ${r.url ? `<div><p class="text-text-secondary-dark text-xs mb-1">URL</p><a href="${r.url}" target="_blank" class="text-primary hover:underline break-all">${r.url}</a></div>` : ''}
+                        ${r.note ? `<div><p class="text-text-secondary-dark text-xs mb-1">NOTA</p><p class="text-white whitespace-pre-wrap">${r.note}</p></div>` : ''}
+                    </div>
+                `;
+                showModal(`🔐 ${r.title}`, content);
+            } catch (e) {
+                showToast("Error: " + e.message, "error");
+            }
+        };
+    });
+
+    // --- Listener para EDITAR ---
+    box.querySelectorAll(".btn-edit").forEach(btn => {
+        btn.onclick = async () => {
+            if (!isVaultUnlocked) {
+                return showToast("Debes desbloquear la bóveda primero", "warning");
+            }
+            try {
+                const id = btn.getAttribute("data-id");
+                const r = await api(`/vault/${id}`, "GET", null, true); // true = usa K_mix
+
+                document.getElementById("vault-title").value = r.title || "";
+                document.getElementById("vault-username").value = r.username || "";
+                document.getElementById("vault-url").value = r.url || "";
+                document.getElementById("vault-note").value = r.note || "";
+                document.getElementById("vault-secret").value = r.secret_plain || "";
+
+                updateVaultSecretStrength(r.secret_plain || "");
+                document.getElementById("vault-title").scrollIntoView({ behavior: "smooth", block: "center" });
+
+                const saveBtn = document.getElementById("btn-save-entry");
+                const cancelBtn = document.getElementById("btn-cancel-edit");
+                saveBtn.querySelector("span").textContent = "Actualizar";
+                saveBtn.dataset.editId = id;
+                cancelBtn.classList.remove("hidden");
+                cancelBtn.classList.add("flex");
+            } catch (e) {
+                showToast("Error: " + e.message, "error");
+            }
+        };
+    });
+
+    // --- Listener para BORRAR ---
+    box.querySelectorAll(".btn-delete").forEach(btn => {
+        btn.onclick = async () => {
+            if (!isVaultUnlocked) {
+                return showToast("Debes desbloquear la bóveda primero", "warning");
+            }
+            try {
+                const id = btn.getAttribute("data-id");
+                showConfirm(
+                    "Eliminar entrada",
+                    "¿Estás seguro de que deseas eliminar esta entrada? Esta acción no se puede deshacer.",
+                    async () => {
+                        try {
+                            await api(`/vault/${id}`, "DELETE");
+                            loadEntries(); // Recarga y bloquea la bóveda
+                            showToast("Entrada eliminada exitosamente", "success");
+                        } catch (e) {
+                            showToast("Error: " + e.message, "error");
+                        }
+                    }
+                );
+            } catch (e) {
+                showToast("Error: " + e.message, "error");
+            }
+        };
+    });
+}
+
+/**
+ * Maneja la lógica de desbloqueo de la bóveda.
+ */
+function handleVaultUnlockRequest() {
+    showWebcamModal(
+        "Verificación Facial de la Bóveda",
+        "Toma una foto para desbloquear tu bóveda.",
+        async (imageDataUrl) => {
+            try {
+                // Enviar foto al endpoint de verificación
+                const verifyRes = await api("/vault/verify-face", "POST", { image_data_url: imageDataUrl });
+
+                if (verifyRes.verified) {
+                    // Verificación OK.
+                    isVaultUnlocked = true;
+                    document.getElementById('vault-locked-overlay').style.display = 'none';
+                    document.getElementById('btn-unlock-vault').innerHTML = `
+                        <span class="material-symbols-outlined text-base text-success">lock_open</span>
+                        <span class="text-success">Bóveda Desbloqueada</span>`;
+                    showToast("Bóveda desbloqueada", "success");
+                } else {
+                    // Verificación fallida. Cerrar sesión.
+                    showToast("Rostro no coincide. Cerrando sesión.", "error");
+                    setTimeout(performLogout, 2000);
+                }
+            } catch (e) {
+                showToast("Error: " + e.message, "error");
+            }
+        }
+    );
 }
 
 /* ===== Initialize ===== */
@@ -715,4 +841,9 @@ document.addEventListener("DOMContentLoaded", () => {
     setupPasswordToggle("toggle-master-pwd", "master");
     setupPasswordToggle("toggle-gen-pwd", "gen-output");
     setupPasswordToggle("toggle-vault-pwd", "vault-secret");
+
+    // ===== CAMBIO 3: ELIMINAR el listener de aquí =====
+    // El listener de 'btn-unlock-vault' se movió a 
+    // 'btn-goto-vault' y 'btn-use-gen'
+    // ===============================================
 });

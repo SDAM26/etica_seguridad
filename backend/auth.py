@@ -8,6 +8,9 @@ from database import get_db
 from models import User
 from schemas import RegisterIn, LoginIn
 from crypto import b64u, ub64u
+# --- NUEVAS IMPORTACIONES ---
+from face_rec import get_arcface_embedding_from_bytes, data_url_to_bytes
+# --- FIN NUEVAS IMPORTACIONES ---
 
 JWT_SECRET = os.environ.get("JWT_SECRET", "dev_secret_change_me")
 JWT_EXPIRE_MIN = int(os.environ.get("JWT_EXPIRE_MIN", "120"))
@@ -24,10 +27,28 @@ def verify_password(password: str, salt_auth: bytes, pwd_hash: bytes) -> bool:
 def create_user(db: Session, data: RegisterIn) -> User:
     if db.query(User).filter_by(email=data.email.lower()).first():
         raise HTTPException(status_code=400, detail="Email ya registrado")
+    
+    # --- NUEVA LÓGICA FACIAL ---
+    try:
+        img_bytes = data_url_to_bytes(data.image_data_url)
+        embedding = get_arcface_embedding_from_bytes(img_bytes)
+        if embedding is None:
+            raise HTTPException(status_code=400, detail="No se detectó un rostro claro en la foto. Intenta de nuevo.")
+    except Exception as e:
+        raise HTTPException(status_code=400, detail=f"Error procesando imagen: {e}")
+    # --- FIN LÓGICA FACIAL ---
+
     salt_auth = _randbytes(16)
     salt_user = _randbytes(16)
     pwd_hash = hash_password(data.password, salt_auth)
-    u = User(email=data.email.lower(), pwd_hash=pwd_hash, salt_auth=salt_auth, salt_user=salt_user)
+    
+    u = User(
+        email=data.email.lower(), 
+        pwd_hash=pwd_hash, 
+        salt_auth=salt_auth, 
+        salt_user=salt_user,
+        face_embedding=embedding.tobytes() # <-- Guardamos el embedding
+    )
     db.add(u); db.commit(); db.refresh(u)
     return u
 

@@ -10,6 +10,12 @@ class User(Base):
     pwd_hash: Mapped[bytes] = mapped_column(LargeBinary, nullable=False)
     salt_auth: Mapped[bytes] = mapped_column(LargeBinary, nullable=False)
     salt_user: Mapped[bytes] = mapped_column(LargeBinary, nullable=False)
+    
+    # --- NUEVO CAMPO ---
+    # Almacena el embedding ArcFace del usuario.
+    face_embedding: Mapped[bytes | None] = mapped_column(LargeBinary)
+    # --- FIN NUEVO CAMPO ---
+    
     created_at: Mapped[str] = mapped_column(DateTime(timezone=True), server_default=func.now())
     entries: Mapped[list["VaultEntry"]] = relationship(back_populates="user", cascade="all, delete-orphan")
 

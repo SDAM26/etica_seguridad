@@ -5,6 +5,7 @@ from typing import List, Optional
 class RegisterIn(BaseModel):
     email: EmailStr
     password: str
+    image_data_url: str  # <-- NUEVO: Foto de registro en Base64 DataURL
 
 class LoginIn(BaseModel):
     email: EmailStr
@@ -48,8 +49,7 @@ class PwGenOut(BaseModel):
     password: str
     score: int
     label: str
-    suggestions: Optional[List[str]] = None   # <-- añadir
-
+    suggestions: Optional[List[str]] = None
 
 class PwScoreIn(BaseModel):
     password: str
@@ -57,4 +57,13 @@ class PwScoreIn(BaseModel):
 class PwScoreOut(BaseModel):
     score: int
     label: str
-    suggestions: Optional[List[str]] = None   # <-- añadir
+    suggestions: Optional[List[str]] = None
+
+# --- NUEVOS SCHEMAS ---
+class VerifyFaceIn(BaseModel):
+    image_data_url: str
+
+class VerifyFaceOut(BaseModel):
+    verified: bool
+    similarity: Optional[float] = None
+# --- FIN NUEVOS SCHEMAS ---
