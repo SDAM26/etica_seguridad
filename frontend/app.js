@@ -9,7 +9,7 @@ let token = null;
 let salt_user_b64u = null;
 let generatedPassword = ""; // Para "Usar en Vault"
 let g_webcamStream = null; // Stream global de la webcam
-let isVaultUnlocked = false; // <-- NUEVO ESTADO: Controla si la bóveda está desbloqueada
+let isVaultUnlocked = false; // Estado: Controla si la bóveda está desbloqueada
 
 /* ===== View Management (SPA Routing) ===== */
 function showView(viewId) {
@@ -324,11 +324,13 @@ function takeSnapshot(videoEl, canvasEl) {
     canvasEl.width = videoEl.videoWidth;
     canvasEl.height = videoEl.videoHeight;
     
+    // Invertir horizontalmente (efecto espejo)
     context.translate(canvasEl.width, 0);
     context.scale(-1, 1);
     
     context.drawImage(videoEl, 0, 0, canvasEl.width, canvasEl.height);
     
+    // Resetear la transformación
     context.setTransform(1, 0, 0, 1, 0, 0);
     
     return canvasEl.toDataURL('image/jpeg', 0.9);
@@ -365,7 +367,7 @@ function showWebcamModal(title, message, onSnapshot) {
 }
 
 /* ===== Authentication ===== */
-document.getElementById("btn-register").onclick = async () => {
+async function handleRegister() {
     const email = document.getElementById("email").value.trim();
     const password = document.getElementById("password").value;
     if (!email || !password) return showMessage("Por favor completa email y contraseña", "error");
@@ -394,9 +396,9 @@ document.getElementById("btn-register").onclick = async () => {
             }
         }
     );
-};
+}
 
-document.getElementById("btn-login").onclick = async () => {
+async function handleLogin() {
     try {
         const email = document.getElementById("email").value.trim();
         const password = document.getElementById("password").value;
@@ -411,24 +413,28 @@ document.getElementById("btn-login").onclick = async () => {
     } catch (e) {
         showMessage("Error: " + e.message, "error");
     }
-};
+}
 
 function performLogout() {
     token = null;
     salt_user_b64u = null;
-    isVaultUnlocked = false; // <-- Bloquear la bóveda al salir
+    isVaultUnlocked = false; 
 
     ["email", "password", "master", "vault-title", "vault-username", "vault-url", "vault-secret", "vault-note", "gen-output"].forEach(id => {
         const el = document.getElementById(id);
         if (el) el.value = "";
     });
 
+    // Limpiar lista de entradas al cerrar sesión
+    const entriesList = document.getElementById("entries-list");
+    if (entriesList) entriesList.innerHTML = "";
+
     setAuthUI(false);
     showMessage("Sesión cerrada correctamente", "success");
     showToast("Sesión cerrada correctamente", "success");
 }
 
-document.getElementById("btn-logout").onclick = () => {
+function handleLogout() {
     showConfirm(
         "Cerrar sesión",
         "¿Seguro que deseas cerrar sesión?",
@@ -436,110 +442,11 @@ document.getElementById("btn-logout").onclick = () => {
             performLogout();
         }
     );
-};
-
-/* ===== Master Password & Device Secret ===== */
-document.getElementById("btn-create-secret").onclick = () => {
-    getOrCreateDeviceSecret();
-    showToast("Secreto creado (o ya existía).", "success");
-    computeKmix();
-};
-document.getElementById("btn-export-secret").onclick = exportSecret;
-document.getElementById("btn-import-secret").onclick = () => {
-    document.getElementById("secret-file").click();
-};
-document.getElementById("secret-file").onchange = (ev) => {
-    if (ev.target.files[0]) importSecret(ev.target.files[0]);
-};
-document.getElementById("master")?.addEventListener("input", () => {
-    computeKmix();
-});
-
-/* ===== Navigation Buttons ===== */
-document.getElementById("btn-goto-generator").onclick = () => showView('view-generator');
-
-// ===== CAMBIO 1: Adjuntar listener de desbloqueo al ir al vault =====
-document.getElementById("btn-goto-vault").onclick = () => {
-    showView('view-vault');
-    loadEntries(); // Carga las entradas (y las muestra bloqueadas)
-    // Adjuntamos el listener CADA VEZ que se entra a esta vista
-    document.getElementById("btn-unlock-vault").onclick = handleVaultUnlockRequest;
-};
-// ===============================================================
-
-document.getElementById("btn-back-from-gen").onclick = () => showView('view-master');
-document.getElementById("btn-back-from-vault").onclick = () => showView('view-master');
-
-// Vault search functionality
-document.getElementById("vault-search")?.addEventListener("input", (e) => {
-    const searchTerm = e.target.value.toLowerCase().trim();
-    const entriesList = document.getElementById("entries-list");
-    if (!entriesList) return;
-
-    const entries = entriesList.querySelectorAll("div.flex.items-center.p-4");
-    entries.forEach(entryDiv => {
-        const titleElement = entryDiv.querySelector(".text-white.text-base.font-medium");
-        if (titleElement) {
-            const title = titleElement.textContent.toLowerCase();
-            entryDiv.style.display = title.includes(searchTerm) ? "flex" : "none";
-        }
-    });
-});
-
-/* ===== Password Generator ===== */
-const genLengthRange = document.getElementById("gen-length-range");
-const genLengthInput = document.getElementById("gen-length");
-genLengthRange.oninput = () => { genLengthInput.value = genLengthRange.value; };
-genLengthInput.oninput = () => { genLengthRange.value = genLengthInput.value; };
-
-document.getElementById("btn-generate").onclick = async () => {
-    try {
-        const length = parseInt(genLengthInput.value, 10);
-        const use_symbols = document.getElementById("gen-symbols").checked;
-        const r = await api("/tools/generate", "POST", { length, use_symbols });
-
-        generatedPassword = r.password || "";
-        document.getElementById("gen-output").value = generatedPassword;
-
-        const scoreLabel = document.getElementById("score-label");
-        if (scoreLabel) {
-            const colors = { weak: "text-error", medium: "text-warning", strong: "text-success" };
-            const colorClass = r.score >= 4 ? colors.strong : r.score >= 2 ? colors.medium : colors.weak;
-            scoreLabel.className = colorClass;
-            scoreLabel.textContent = r.label || "N/A";
-        }
-        showToast("Contraseña generada exitosamente", "success");
-    } catch (e) {
-        showToast("Error: " + e.message, "error");
-    }
-};
-
-document.getElementById("btn-copy-gen").onclick = async () => {
-    const val = document.getElementById("gen-output").value || "";
-    if (!val) return showToast("Nada que copiar", "warning");
-    await navigator.clipboard.writeText(val);
-    showToast("Copiado al portapapeles ✅", "success");
-};
-
-// ===== CAMBIO 2: Adjuntar listener de desbloqueo también aquí =====
-document.getElementById("btn-use-gen").onclick = () => {
-    const val = document.getElementById("gen-output").value || "";
-    if (!val) return showToast("Primero genera una contraseña", "warning");
-    showView('view-vault');
-
-    // Adjuntamos el listener CADA VEZ que se entra a esta vista
-    document.getElementById("btn-unlock-vault").onclick = handleVaultUnlockRequest;
-    // NOTA: No llamamos a loadEntries() para no limpiar el formulario
-    
-    document.getElementById("vault-secret").value = val;
-    updateVaultSecretStrength(val);
-    showToast("Contraseña copiada al formulario", "success");
-};
-// =============================================================
+}
 
 /* ===== Vault - Password Strength Monitor ===== */
 let secretDebounce;
-async function updateVaultSecretStrength(pwd) {
+function updateVaultSecretStrength(pwd) {
     const el = document.getElementById("vault-strength");
     if (!el) return;
     if (!pwd) {
@@ -564,30 +471,8 @@ async function updateVaultSecretStrength(pwd) {
     }, 300);
 }
 
-document.getElementById("vault-secret")?.addEventListener("input", (e) => {
-    updateVaultSecretStrength(e.target.value);
-});
-
-/* ===== Vault - Cancel Edit ===== */
-document.getElementById("btn-cancel-edit").onclick = () => {
-    ["vault-title", "vault-username", "vault-url", "vault-secret", "vault-note"].forEach(id => {
-        const el = document.getElementById(id);
-        if (el) el.value = "";
-    });
-    updateVaultSecretStrength("");
-
-    const saveBtn = document.getElementById("btn-save-entry");
-    const cancelBtn = document.getElementById("btn-cancel-edit");
-    saveBtn.querySelector("span").textContent = "Guardar";
-    delete saveBtn.dataset.editId;
-    cancelBtn.classList.add("hidden");
-    cancelBtn.classList.remove("flex");
-
-    showToast("Edición cancelada", "info");
-};
-
 /* ===== Vault - Create/Update Entry ===== */
-document.getElementById("btn-save-entry").onclick = async () => {
+async function handleSaveEntry() {
     try {
         const saveBtn = document.getElementById("btn-save-entry");
         const editId = saveBtn.dataset.editId;
@@ -618,8 +503,10 @@ document.getElementById("btn-save-entry").onclick = async () => {
             showToast("Entrada guardada exitosamente ✅", "success");
         }
 
-        loadEntries(); // <-- Recarga la lista (y la vuelve a bloquear)
+        // Resetea la vista del vault para forzar el desbloqueo
+        setupVaultView(); 
 
+        // Limpia el formulario
         ["vault-title", "vault-username", "vault-url", "vault-secret", "vault-note"].forEach(id => {
             const el = document.getElementById(id);
             if (el) el.value = "";
@@ -628,19 +515,40 @@ document.getElementById("btn-save-entry").onclick = async () => {
     } catch (e) {
         showToast("Error: " + e.message, "error");
     }
-};
+}
 
 /* ===== Vault - Load Entries ===== */
-async function loadEntries() {
+
+/**
+ * Resetea la vista del vault a su estado bloqueado.
+ * Se llama CADA VEZ que se entra a la vista.
+ */
+function setupVaultView() {
     isVaultUnlocked = false;
-    document.getElementById('vault-locked-overlay').style.display = 'flex';
-    document.getElementById('btn-unlock-vault').innerHTML = `
-        <span class="material-symbols-outlined text-base">visibility_off</span>
-        <span>Desbloquear</span>`;
     
+    const entriesList = document.getElementById("entries-list");
+    if (entriesList) entriesList.innerHTML = "";
+    
+    const overlay = document.getElementById('vault-locked-overlay');
+    if (overlay) overlay.style.display = 'flex';
+    
+    const unlockBtn = document.getElementById('btn-unlock-vault');
+    if (unlockBtn) {
+        unlockBtn.innerHTML = `
+            <span class="material-symbols-outlined text-base">visibility_off</span>
+            <span>Desbloquear</span>`;
+    }
+}
+
+
+/**
+ * Carga y renderiza las entradas DESPUÉS de la verificación.
+ */
+async function loadEntries() {
     if (!token) return;
 
     try {
+        // Llama a la API para OBTENER las entradas
         const rows = await api("/vault", "GET");
         const box = document.getElementById("entries-list");
         if (!box) return;
@@ -653,11 +561,10 @@ async function loadEntries() {
                     <p class="text-sm text-text-secondary-dark">Crea una nueva entrada para empezar.</p>
                 </div>
             `;
-            // Asegurarse de que el overlay de "bloqueado" no tape el mensaje de "vacío"
-            document.getElementById('vault-locked-overlay').style.display = 'none';
             return;
         }
 
+        // Renderiza las entradas
         box.innerHTML = "";
         rows.forEach(r => {
             const div = document.createElement("div");
@@ -681,127 +588,15 @@ async function loadEntries() {
             `;
             box.appendChild(div);
         });
-
-        attachEntryListeners(box);
         
     } catch (e) {
         console.error("Error loading entries:", e);
     }
 }
 
-/**
- * Adjunta los listeners a los botones de las entradas.
- */
-function attachEntryListeners(box) {
-    // --- Listener para VER ---
-    box.querySelectorAll(".btn-view").forEach(btn => {
-        btn.onclick = async () => {
-            if (!isVaultUnlocked) {
-                return showToast("Debes desbloquear la bóveda primero", "warning");
-            }
-            try {
-                const id = btn.getAttribute("data-id");
-                const r = await api(`/vault/${id}`, "GET", null, true); // true = usa K_mix
-                
-                const passwordId = `pwd-${id}`;
-                const content = `
-                    <div class="space-y-4">
-                        <div class="bg-background-dark p-4 rounded-lg border border-border-dark">
-                            <p class="text-text-secondary-dark text-xs mb-2">CONTRASEÑA</p>
-                            <div class="flex items-center gap-2">
-                                <p id="${passwordId}" class="text-white text-lg font-mono flex-1 break-all">••••••••••••</p>
-                                <button onclick="
-                                    const el = document.getElementById('${passwordId}');
-                                    const btn = this;
-                                    const icon = btn.querySelector('.material-symbols-outlined');
-                                    if (el.textContent === '••••••••••••') {
-                                        el.textContent = '${r.secret_plain.replace(/'/g, "\\'")}';
-                                        icon.textContent = 'visibility_off';
-                                    } else {
-                                        el.textContent = '••••••••••••';
-                                        icon.textContent = 'visibility';
-                                    }
-                                " class="p-2 rounded-lg bg-surface-dark border border-border-dark text-text-secondary-dark hover:text-white transition-colors">
-                                    <span class="material-symbols-outlined" style="font-size: 20px;">visibility</span>
-                                </button>
-                                <button onclick="navigator.clipboard.writeText('${r.secret_plain.replace(/'/g, "\\'")}'); showToast('Contraseña copiada', 'success');" class="p-2 rounded-lg bg-primary/20 text-primary hover:bg-primary/30 transition-colors">
-                                    <span class="material-symbols-outlined" style="font-size: 20px;">content_copy</span>
-                                </button>
-                            </div>
-                        </div>
-                        ${r.username ? `<div><p class="text-text-secondary-dark text-xs mb-1">USUARIO</p><p class="text-white">${r.username}</p></div>` : ''}
-                        ${r.url ? `<div><p class="text-text-secondary-dark text-xs mb-1">URL</p><a href="${r.url}" target="_blank" class="text-primary hover:underline break-all">${r.url}</a></div>` : ''}
-                        ${r.note ? `<div><p class="text-text-secondary-dark text-xs mb-1">NOTA</p><p class="text-white whitespace-pre-wrap">${r.note}</p></div>` : ''}
-                    </div>
-                `;
-                showModal(`🔐 ${r.title}`, content);
-            } catch (e) {
-                showToast("Error: " + e.message, "error");
-            }
-        };
-    });
-
-    // --- Listener para EDITAR ---
-    box.querySelectorAll(".btn-edit").forEach(btn => {
-        btn.onclick = async () => {
-            if (!isVaultUnlocked) {
-                return showToast("Debes desbloquear la bóveda primero", "warning");
-            }
-            try {
-                const id = btn.getAttribute("data-id");
-                const r = await api(`/vault/${id}`, "GET", null, true); // true = usa K_mix
-
-                document.getElementById("vault-title").value = r.title || "";
-                document.getElementById("vault-username").value = r.username || "";
-                document.getElementById("vault-url").value = r.url || "";
-                document.getElementById("vault-note").value = r.note || "";
-                document.getElementById("vault-secret").value = r.secret_plain || "";
-
-                updateVaultSecretStrength(r.secret_plain || "");
-                document.getElementById("vault-title").scrollIntoView({ behavior: "smooth", block: "center" });
-
-                const saveBtn = document.getElementById("btn-save-entry");
-                const cancelBtn = document.getElementById("btn-cancel-edit");
-                saveBtn.querySelector("span").textContent = "Actualizar";
-                saveBtn.dataset.editId = id;
-                cancelBtn.classList.remove("hidden");
-                cancelBtn.classList.add("flex");
-            } catch (e) {
-                showToast("Error: " + e.message, "error");
-            }
-        };
-    });
-
-    // --- Listener para BORRAR ---
-    box.querySelectorAll(".btn-delete").forEach(btn => {
-        btn.onclick = async () => {
-            if (!isVaultUnlocked) {
-                return showToast("Debes desbloquear la bóveda primero", "warning");
-            }
-            try {
-                const id = btn.getAttribute("data-id");
-                showConfirm(
-                    "Eliminar entrada",
-                    "¿Estás seguro de que deseas eliminar esta entrada? Esta acción no se puede deshacer.",
-                    async () => {
-                        try {
-                            await api(`/vault/${id}`, "DELETE");
-                            loadEntries(); // Recarga y bloquea la bóveda
-                            showToast("Entrada eliminada exitosamente", "success");
-                        } catch (e) {
-                            showToast("Error: " + e.message, "error");
-                        }
-                    }
-                );
-            } catch (e) {
-                showToast("Error: " + e.message, "error");
-            }
-        };
-    });
-}
 
 /**
- * Maneja la lógica de desbloqueo de la bóveda.
+ * Maneja la lógica de desbloqueo de la bóveda (verificación facial).
  */
 function handleVaultUnlockRequest() {
     showWebcamModal(
@@ -820,6 +615,10 @@ function handleVaultUnlockRequest() {
                         <span class="material-symbols-outlined text-base text-success">lock_open</span>
                         <span class="text-success">Bóveda Desbloqueada</span>`;
                     showToast("Bóveda desbloqueada", "success");
+                    
+                    // ***** ¡AHORA SÍ CARGAMOS LAS ENTRADAS! *****
+                    loadEntries();
+
                 } else {
                     // Verificación fallida. Cerrar sesión.
                     showToast("Rostro no coincide. Cerrando sesión.", "error");
@@ -832,18 +631,264 @@ function handleVaultUnlockRequest() {
     );
 }
 
-/* ===== Initialize ===== */
-document.addEventListener("DOMContentLoaded", () => {
+/**
+ * [NUEVO] Manejador de clics centralizado para la vista del vault.
+ * Usa delegación de eventos.
+ */
+async function handleVaultClicks(e) {
+    const target = e.target;
+
+    // --- Clic en "Desbloquear" ---
+    if (target.closest('#btn-unlock-vault')) {
+        handleVaultUnlockRequest();
+        return;
+    }
+
+    // --- Clic en "Ver" ---
+    const viewBtn = target.closest('.btn-view');
+    if (viewBtn) {
+        if (!isVaultUnlocked) {
+            return showToast("Debes desbloquear la bóveda primero", "warning");
+        }
+        try {
+            const id = viewBtn.getAttribute("data-id");
+            const r = await api(`/vault/${id}`, "GET", null, true); // true = usa K_mix
+            
+            const passwordId = `pwd-${id}`;
+            const content = `
+                <div class="space-y-4">
+                    <div class="bg-background-dark p-4 rounded-lg border border-border-dark">
+                        <p class="text-text-secondary-dark text-xs mb-2">CONTRASEÑA</p>
+                        <div class="flex items-center gap-2">
+                            <p id="${passwordId}" class="text-white text-lg font-mono flex-1 break-all">••••••••••••</p>
+                            <button onclick="
+                                const el = document.getElementById('${passwordId}');
+                                const btn = this;
+                                const icon = btn.querySelector('.material-symbols-outlined');
+                                if (el.textContent === '••••••••••••') {
+                                    el.textContent = '${r.secret_plain.replace(/'/g, "\\'")}';
+                                    icon.textContent = 'visibility_off';
+                                } else {
+                                    el.textContent = '••••••••••••';
+                                    icon.textContent = 'visibility';
+                                }
+                            " class="p-2 rounded-lg bg-surface-dark border border-border-dark text-text-secondary-dark hover:text-white transition-colors">
+                                <span class="material-symbols-outlined" style="font-size: 20px;">visibility</span>
+                            </button>
+                            <button onclick="navigator.clipboard.writeText('${r.secret_plain.replace(/'/g, "\\'")}'); showToast('Contraseña copiada', 'success');" class="p-2 rounded-lg bg-primary/20 text-primary hover:bg-primary/30 transition-colors">
+                                <span class="material-symbols-outlined" style="font-size: 20px;">content_copy</span>
+                            </button>
+                        </div>
+                    </div>
+                    ${r.username ? `<div><p class="text-text-secondary-dark text-xs mb-1">USUARIO</p><p class="text-white">${r.username}</p></div>` : ''}
+                    ${r.url ? `<div><p class="text-text-secondary-dark text-xs mb-1">URL</p><a href="${r.url}" target="_blank" class="text-primary hover:underline break-all">${r.url}</a></div>` : ''}
+                    ${r.note ? `<div><p class="text-text-secondary-dark text-xs mb-1">NOTA</p><p class="text-white whitespace-pre-wrap">${r.note}</p></div>` : ''}
+                </div>
+            `;
+            showModal(`🔐 ${r.title}`, content);
+        } catch (e) {
+            showToast("Error: " + e.message, "error");
+        }
+        return;
+    }
+
+    // --- Clic en "Editar" ---
+    const editBtn = target.closest('.btn-edit');
+    if (editBtn) {
+        if (!isVaultUnlocked) {
+            return showToast("Debes desbloquear la bóveda primero", "warning");
+        }
+        try {
+            const id = editBtn.getAttribute("data-id");
+            const r = await api(`/vault/${id}`, "GET", null, true); // true = usa K_mix
+
+            document.getElementById("vault-title").value = r.title || "";
+            document.getElementById("vault-username").value = r.username || "";
+            document.getElementById("vault-url").value = r.url || "";
+            document.getElementById("vault-note").value = r.note || "";
+            document.getElementById("vault-secret").value = r.secret_plain || "";
+
+            updateVaultSecretStrength(r.secret_plain || "");
+            document.getElementById("vault-title").scrollIntoView({ behavior: "smooth", "block": "center" });
+
+            const saveBtn = document.getElementById("btn-save-entry");
+            const cancelBtn = document.getElementById("btn-cancel-edit");
+            saveBtn.querySelector("span").textContent = "Actualizar";
+            saveBtn.dataset.editId = id;
+            cancelBtn.classList.remove("hidden");
+            cancelBtn.classList.add("flex");
+        } catch (e) {
+            showToast("Error: " + e.message, "error");
+        }
+        return;
+    }
+
+    // --- Clic en "Borrar" ---
+    const deleteBtn = target.closest('.btn-delete');
+    if (deleteBtn) {
+        if (!isVaultUnlocked) {
+            return showToast("Debes desbloquear la bóveda primero", "warning");
+        }
+        try {
+            const id = deleteBtn.getAttribute("data-id");
+            showConfirm(
+                "Eliminar entrada",
+                "¿Estás seguro de que deseas eliminar esta entrada? Esta acción no se puede deshacer.",
+                async () => {
+                    try {
+                        await api(`/vault/${id}`, "DELETE");
+                        setupVaultView(); // Resetea la vista
+                        showToast("Entrada eliminada exitosamente", "success");
+                    } catch (e) {
+                        showToast("Error: " + e.message, "error");
+                    }
+                }
+            );
+        } catch (e) {
+            showToast("Error: " + e.message, "error");
+        }
+        return;
+    }
+}
+
+
+/**
+ * Función principal que se ejecuta al cargar el DOM.
+ */
+function main() {
+    console.log("DOM listo. Adjuntando eventos...");
+
+    // 1. Inicia la UI en estado "log out"
     setAuthUI(false);
 
-    // Setup password toggles
+    // 2. Conecta los toggles de visibilidad de contraseñas
     setupPasswordToggle("toggle-login-pwd", "password");
     setupPasswordToggle("toggle-master-pwd", "master");
     setupPasswordToggle("toggle-gen-pwd", "gen-output");
     setupPasswordToggle("toggle-vault-pwd", "vault-secret");
 
-    // ===== CAMBIO 3: ELIMINAR el listener de aquí =====
-    // El listener de 'btn-unlock-vault' se movió a 
-    // 'btn-goto-vault' y 'btn-use-gen'
-    // ===============================================
-});
+    // 3. Conecta TODOS los botones y acciones principales
+    
+    // Autenticación
+    document.getElementById("btn-register").onclick = handleRegister;
+    document.getElementById("btn-login").onclick = handleLogin;
+    document.getElementById("btn-logout").onclick = handleLogout;
+
+    // Contraseña Maestra
+    document.getElementById("btn-create-secret").onclick = () => {
+        getOrCreateDeviceSecret();
+        showToast("Secreto creado (o ya existía).", "success");
+        computeKmix();
+    };
+    document.getElementById("btn-export-secret").onclick = exportSecret;
+    document.getElementById("btn-import-secret").onclick = () => {
+        document.getElementById("secret-file").click();
+    };
+    document.getElementById("secret-file").onchange = (ev) => {
+        if (ev.target.files[0]) importSecret(ev.target.files[0]);
+    };
+    document.getElementById("master").addEventListener("input", () => {
+        computeKmix();
+    });
+
+    // Navegación
+    document.getElementById("btn-goto-generator").onclick = () => showView('view-generator');
+    document.getElementById("btn-goto-vault").onclick = () => {
+        showView('view-vault');
+        setupVaultView(); 
+    };
+    document.getElementById("btn-back-from-gen").onclick = () => showView('view-master');
+    document.getElementById("btn-back-from-vault").onclick = () => showView('view-master');
+
+    // Generador
+    const genLengthRange = document.getElementById("gen-length-range");
+    const genLengthInput = document.getElementById("gen-length");
+    if (genLengthRange && genLengthInput) {
+        genLengthRange.oninput = () => { genLengthInput.value = genLengthRange.value; };
+        genLengthInput.oninput = () => { genLengthRange.value = genLengthInput.value; };
+    }
+
+    document.getElementById("btn-generate").onclick = async () => {
+        try {
+            const length = parseInt(document.getElementById("gen-length").value, 10);
+            const use_symbols = document.getElementById("gen-symbols").checked;
+            const r = await api("/tools/generate", "POST", { length, use_symbols });
+
+            generatedPassword = r.password || "";
+            document.getElementById("gen-output").value = generatedPassword;
+
+            const scoreLabel = document.getElementById("score-label");
+            if (scoreLabel) {
+                const colors = { weak: "text-error", medium: "text-warning", strong: "text-success" };
+                const colorClass = r.score >= 4 ? colors.strong : r.score >= 2 ? colors.medium : colors.weak;
+                scoreLabel.className = colorClass;
+                scoreLabel.textContent = r.label || "N/A";
+            }
+            showToast("Contraseña generada exitosamente", "success");
+        } catch (e) {
+            showToast("Error: " + e.message, "error");
+        }
+    };
+    
+    document.getElementById("btn-copy-gen").onclick = async () => {
+        const val = document.getElementById("gen-output").value || "";
+        if (!val) return showToast("Nada que copiar", "warning");
+        await navigator.clipboard.writeText(val);
+        showToast("Copiado al portapapeles ✅", "success");
+    };
+    
+    document.getElementById("btn-use-gen").onclick = () => {
+        const val = document.getElementById("gen-output").value || "";
+        if (!val) return showToast("Primero genera una contraseña", "warning");
+        showView('view-vault');
+        setupVaultView(); 
+        
+        document.getElementById("vault-secret").value = val;
+        updateVaultSecretStrength(val);
+        showToast("Contraseña copiada al formulario", "success");
+    };
+
+    // Vault (Formulario)
+    document.getElementById("vault-secret").addEventListener("input", (e) => {
+        updateVaultSecretStrength(e.target.value);
+    });
+    document.getElementById("btn-save-entry").onclick = handleSaveEntry;
+    document.getElementById("btn-cancel-edit").onclick = () => {
+        ["vault-title", "vault-username", "vault-url", "vault-secret", "vault-note"].forEach(id => {
+            const el = document.getElementById(id);
+            if (el) el.value = "";
+        });
+        updateVaultSecretStrength("");
+
+        const saveBtn = document.getElementById("btn-save-entry");
+        const cancelBtn = document.getElementById("btn-cancel-edit");
+        saveBtn.querySelector("span").textContent = "Guardar";
+        delete saveBtn.dataset.editId;
+        cancelBtn.classList.add("hidden");
+        cancelBtn.classList.remove("flex");
+
+        showToast("Edición cancelada", "info");
+    };
+    document.getElementById("vault-search").addEventListener("input", (e) => {
+        const searchTerm = e.target.value.toLowerCase().trim();
+        const entriesList = document.getElementById("entries-list");
+        if (!entriesList) return;
+
+        const entries = entriesList.querySelectorAll("div.flex.items-center.p-4");
+        entries.forEach(entryDiv => {
+            const titleElement = entryDiv.querySelector(".text-white.text-base.font-medium");
+            if (titleElement) {
+                const title = titleElement.textContent.toLowerCase();
+                entryDiv.style.display = title.includes(searchTerm) ? "flex" : "none";
+            }
+        });
+    });
+    
+    // Adjunta el manejador de clics delegado a la VISTA DEL VAULT
+    document.getElementById('view-vault').addEventListener('click', handleVaultClicks);
+    
+    console.log("Eventos adjuntados.");
+}
+
+
+document.addEventListener("DOMContentLoaded", main);

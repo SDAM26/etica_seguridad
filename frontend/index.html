@@ -375,7 +375,6 @@
 
                     <!-- Mis Entradas -->
                     <div class="bg-surface-dark rounded-xl p-6">
-                        <!-- ===== NUEVO: CABECERA DE MIS ENTRADAS ===== -->
                         <div class="flex items-center justify-between mb-6">
                             <h2 class="text-white text-lg font-bold">Mis entradas</h2>
                             <button id="btn-unlock-vault" class="flex items-center gap-2 px-3 py-2 rounded-lg bg-surface-dark border border-border-dark text-white hover:bg-white/10 transition-colors text-sm">
@@ -383,7 +382,6 @@
                                 <span>Desbloquear</span>
                             </button>
                         </div>
-                        <!-- ===== FIN NUEVA CABECERA ===== -->
 
 
                         <!-- Buscador -->
@@ -393,7 +391,6 @@
                                    class="flex-1 bg-transparent text-white focus:outline-none placeholder:text-text-secondary-dark"/>
                         </div>
                         
-                        <!-- ===== NUEVO: CONTENEDOR CON OVERLAY ===== -->
                         <div class="relative">
                             <div id="vault-locked-overlay" class="absolute inset-0 bg-surface-dark/90 backdrop-blur-sm flex flex-col items-center justify-center rounded-lg z-10 min-h-[200px]">
                                 <span class="material-symbols-outlined text-5xl text-text-secondary-dark">lock</span>
@@ -404,7 +401,6 @@
                                 <!-- Se llenará dinámicamente -->
                             </div>
                         </div>
-                        <!-- ===== FIN CONTENEDOR CON OVERLAY ===== -->
 
                     </div>
                 </div>
@@ -415,7 +411,7 @@
     <!-- Toast Container -->
     <div id="toast-container"></div>
 
-    <!-- ===== MODAL DE WEBCAM (Sin cambios) ===== -->
+    <!-- ===== MODAL DE WEBCAM ===== -->
     <div id="webcam-modal" class="modal-overlay">
         <div class="modal-content">
             <div class="flex items-center justify-between mb-4">
@@ -426,11 +422,9 @@
             </div>
             <div class="modal-body text-text-primary-dark mb-6 space-y-4">
                 <p id="webcam-message" class="text-center text-text-secondary-dark">Centra tu rostro en el recuadro.</p>
-                <!-- Contenedor para la cámara -->
                 <div class="bg-background-dark rounded-lg overflow-hidden border border-border-dark">
                     <video id="webcam-video" autoplay playsinline></video>
                 </div>
-                <!-- Canvas oculto para tomar la foto -->
                 <canvas id="webcam-canvas"></canvas>
             </div>
             <div class="flex gap-3">
@@ -442,6 +436,7 @@
     </div>
     <!-- ===== FIN MODAL WEBCAM ===== -->
 
-    <script src="app.js"></script>
+    <!-- ***** CAMBIO CLAVE ***** -->
+    <script src="app.js?v=1.0"></script>
 </body>
 </html>
