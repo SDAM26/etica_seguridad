@@ -170,6 +170,12 @@
                             </div>
                         </label>
 
+                        <!-- Botón de ayuda de seguridad -->
+                        <button id="btn-security-info" type="button" class="flex items-center justify-center gap-2 text-sm text-text-secondary-dark hover:text-primary transition-colors self-start -mt-2">
+                            <span class="material-symbols-outlined !text-base">help</span>
+                            <span>¿Cómo protegemos tus datos?</span>
+                        </button>
+
                         <div id="auth-message" class="min-h-6 text-sm"></div>
 
                         <div class="flex flex-col items-stretch gap-4">
@@ -410,6 +416,122 @@
 
     <!-- Toast Container -->
     <div id="toast-container"></div>
+
+    <!-- ===== MODAL DE INFORMACIÓN DE SEGURIDAD ===== -->
+    <div id="security-info-modal" class="modal-overlay hidden">
+        <div class="modal-content max-w-2xl">
+            <div class="flex items-center justify-between mb-6">
+                <div class="flex items-center gap-3">
+                    <div class="flex items-center justify-center w-10 h-10 rounded-full bg-primary/20 text-primary">
+                        <span class="material-symbols-outlined">shield</span>
+                    </div>
+                    <h2 class="text-white text-2xl font-bold">¿Cómo protegemos tus datos?</h2>
+                </div>
+                <button id="security-info-close" class="text-text-secondary-dark hover:text-white transition-colors">
+                    <span class="material-symbols-outlined">close</span>
+                </button>
+            </div>
+            <div class="modal-body text-text-primary-dark space-y-6">
+                <!-- Intro -->
+                <p class="text-base text-text-secondary-dark">
+                    Tu privacidad es nuestra prioridad. Aquí te explicamos de forma simple cómo mantenemos tus contraseñas completamente seguras.
+                </p>
+
+                <!-- Sección 1: Cifrado -->
+                <div class="bg-background-dark rounded-lg p-5 border border-border-dark">
+                    <div class="flex items-start gap-3">
+                        <div class="flex items-center justify-center w-8 h-8 rounded-full bg-success/20 text-success flex-shrink-0 mt-1">
+                            <span class="material-symbols-outlined !text-xl">lock</span>
+                        </div>
+                        <div class="flex-1">
+                            <h3 class="text-white text-lg font-bold mb-2">🔐 Tus contraseñas están cifradas</h3>
+                            <p class="text-text-secondary-dark text-sm leading-relaxed">
+                                Antes de guardarse, tus contraseñas se transforman en un código secreto que solo tú puedes descifrar.
+                                Ni nosotros ni nadie más puede leerlas. Es como guardar un tesoro en una caja fuerte donde solo tú tienes la llave.
+                            </p>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Sección 2: Zero-Knowledge -->
+                <div class="bg-background-dark rounded-lg p-5 border border-border-dark">
+                    <div class="flex items-start gap-3">
+                        <div class="flex items-center justify-center w-8 h-8 rounded-full bg-primary/20 text-primary flex-shrink-0 mt-1">
+                            <span class="material-symbols-outlined !text-xl">visibility_off</span>
+                        </div>
+                        <div class="flex-1">
+                            <h3 class="text-white text-lg font-bold mb-2">👁️ Nosotros no vemos tus contraseñas</h3>
+                            <p class="text-text-secondary-dark text-sm leading-relaxed">
+                                El cifrado ocurre en tu dispositivo, no en nuestros servidores. Esto significa que tus contraseñas
+                                nunca viajan por internet sin protección. Solo guardamos el código cifrado, que sin tu contraseña maestra
+                                es completamente inútil.
+                            </p>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Sección 3: Reconocimiento Facial -->
+                <div class="bg-background-dark rounded-lg p-5 border border-border-dark">
+                    <div class="flex items-start gap-3">
+                        <div class="flex items-center justify-center w-8 h-8 rounded-full bg-warning/20 text-warning flex-shrink-0 mt-1">
+                            <span class="material-symbols-outlined !text-xl">face</span>
+                        </div>
+                        <div class="flex-1">
+                            <h3 class="text-white text-lg font-bold mb-2">👤 Tu rostro como llave extra</h3>
+                            <p class="text-text-secondary-dark text-sm leading-relaxed">
+                                Cuando te registras con foto, convertimos tu rostro en un patrón matemático único (como una huella digital facial).
+                                No guardamos tu foto real, solo este patrón. Esto nos ayuda a confirmar que eres tú cuando intentas acceder a tus contraseñas.
+                            </p>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Sección 4: Qué guardamos -->
+                <div class="bg-background-dark rounded-lg p-5 border border-border-dark">
+                    <div class="flex items-start gap-3">
+                        <div class="flex items-center justify-center w-8 h-8 rounded-full bg-primary/20 text-primary flex-shrink-0 mt-1">
+                            <span class="material-symbols-outlined !text-xl">storage</span>
+                        </div>
+                        <div class="flex-1">
+                            <h3 class="text-white text-lg font-bold mb-2">💾 ¿Qué información guardamos?</h3>
+                            <ul class="text-text-secondary-dark text-sm leading-relaxed space-y-2">
+                                <li class="flex items-start gap-2">
+                                    <span class="text-success mt-0.5">✓</span>
+                                    <span>Tu correo electrónico (para que puedas iniciar sesión)</span>
+                                </li>
+                                <li class="flex items-start gap-2">
+                                    <span class="text-success mt-0.5">✓</span>
+                                    <span><strong>TODO tu contenido cifrado:</strong> títulos, usuarios, URLs, notas y contraseñas están completamente cifrados en la base de datos. Ni siquiera los títulos se guardan en texto plano.</span>
+                                </li>
+                                <li class="flex items-start gap-2">
+                                    <span class="text-success mt-0.5">✓</span>
+                                    <span>El patrón matemático de tu rostro (si elegiste registrarte con foto)</span>
+                                </li>
+                                <li class="flex items-start gap-2">
+                                    <span class="text-error mt-0.5">✗</span>
+                                    <span class="font-medium">NO guardamos tu contraseña maestra, tus fotos reales, ni NINGÚN dato sin cifrar de tus contraseñas</span>
+                                </li>
+                            </ul>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Resumen final -->
+                <div class="bg-primary/10 rounded-lg p-4 border border-primary/30">
+                    <p class="text-sm text-text-primary-dark leading-relaxed">
+                        <strong class="text-primary">En resumen:</strong> Tus contraseñas están protegidas con tecnología de cifrado de nivel militar.
+                        Solo tú puedes acceder a ellas, y nosotros nunca las vemos en texto plano. Tu privacidad está garantizada.
+                    </p>
+                </div>
+            </div>
+            <div class="flex gap-3 mt-6">
+                <button id="security-info-ok" class="flex-1 h-12 px-4 bg-primary text-white rounded-lg font-bold hover:opacity-90 transition-opacity">
+                    Entendido
+                </button>
+            </div>
+        </div>
+    </div>
+    <!-- ===== FIN MODAL INFORMACIÓN DE SEGURIDAD ===== -->
 
     <!-- ===== MODAL DE WEBCAM ===== -->
     <div id="webcam-modal" class="modal-overlay">

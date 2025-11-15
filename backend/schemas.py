@@ -28,10 +28,10 @@ class EntryCreate(BaseModel):
 
 class EntryView(BaseModel):
     id: int
-    title: str
-    username: Optional[str]
-    url: Optional[str]
-    note: Optional[str]
+    title: Optional[str] = None
+    username: Optional[str] = None
+    url: Optional[str] = None
+    note: Optional[str] = None
     secret_plain: Optional[str] = None
 
 class EntryUpdate(BaseModel):

@@ -547,8 +547,8 @@ async function loadEntries() {
     if (!token) return;
 
     try {
-        // Llama a la API para OBTENER las entradas
-        const rows = await api("/vault", "GET");
+        // Llama a la API para OBTENER las entradas (ahora necesita K_mix para descifrar)
+        const rows = await api("/vault", "GET", null, true);
         const box = document.getElementById("entries-list");
         if (!box) return;
 
@@ -772,6 +772,24 @@ function main() {
     document.getElementById("btn-register").onclick = handleRegister;
     document.getElementById("btn-login").onclick = handleLogin;
     document.getElementById("btn-logout").onclick = handleLogout;
+
+    // Modal de información de seguridad
+    const securityInfoModal = document.getElementById("security-info-modal");
+    document.getElementById("btn-security-info").onclick = () => {
+        securityInfoModal.classList.remove("hidden");
+    };
+    document.getElementById("security-info-close").onclick = () => {
+        securityInfoModal.classList.add("hidden");
+    };
+    document.getElementById("security-info-ok").onclick = () => {
+        securityInfoModal.classList.add("hidden");
+    };
+    // Cerrar modal al hacer clic fuera del contenido
+    securityInfoModal.onclick = (e) => {
+        if (e.target === securityInfoModal) {
+            securityInfoModal.classList.add("hidden");
+        }
+    };
 
     // Contraseña Maestra
     document.getElementById("btn-create-secret").onclick = () => {
