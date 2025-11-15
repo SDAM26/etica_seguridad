@@ -1,9 +1,8 @@
 /* =================== PASSWORD MANAGER SPA - MODERN VERSION =================== */
 
 /* ===== Configuration ===== */
-const API = (location.origin.includes("localhost") || location.origin.includes("127.0.0.1"))
-  ? "http://127.0.0.1:8000"
-  : location.origin.replace(/\/$/, "");
+// En Docker, Nginx maneja el proxy, así que usamos rutas relativas
+const API = location.origin.replace(/\/$/, "");
 
 let token = null;
 let salt_user_b64u = null;
