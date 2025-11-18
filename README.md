@@ -2,7 +2,9 @@
 
 ## Informe Técnico – Proyecto de Ética y Seguridad de Datos (DS3031)
 
-**Autor:** Jorge Eduardo Quenta Solis
+**Autores:** 
+- Jorge Eduardo Quenta Solis
+- Stuart Diego Arteaga Montes 
 **Institución:** Universidad de Ingeniería y Tecnología – UTEC
 **Curso:** Ética y Seguridad de Datos (DS3031)
 **Fecha:** Enero 2025
@@ -1844,10 +1846,6 @@ docker compose up -d
 - Inicio del contenedor: ~5-10 segundos
 
 ### 12.5 Contacto y Soporte
-
-**Autores:** 
-- Jorge Eduardo Quenta Solis
-- Stuart Diego Arteaga Montes
 
 **Emails:** 
 - jorge.quenta@utec.edu.pe
