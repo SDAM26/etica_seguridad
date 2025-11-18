@@ -4,10 +4,13 @@
 
 **Autores:** 
 - Jorge Eduardo Quenta Solis
-- Stuart Diego Arteaga Montes 
+- Stuart Diego Arteaga Montes
+
 **Institución:** Universidad de Ingeniería y Tecnología – UTEC
+
 **Curso:** Ética y Seguridad de Datos (DS3031)
-**Fecha:** Enero 2025
+
+**Fecha:** Noviembre 2025
 
 ---
 
