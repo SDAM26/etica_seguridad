@@ -1,0 +1,189 @@
+<!DOCTYPE html>
+
+<html class="dark" lang="en"><head>
+<meta charset="utf-8"/>
+<meta content="width=device-width, initial-scale=1.0" name="viewport"/>
+<title>Password Manager</title>
+<script src="https://cdn.tailwindcss.com?plugins=forms,container-queries"></script>
+<link href="https://fonts.googleapis.com" rel="preconnect"/>
+<link crossorigin="" href="https://fonts.gstatic.com" rel="preconnect"/>
+<link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;700;900&amp;display=swap" rel="stylesheet"/>
+<link href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined" rel="stylesheet"/>
+<script>
+        tailwind.config = {
+            darkMode: "class",
+            theme: {
+                extend: {
+                    colors: {
+                        "primary": "#7dd4fc",
+                        "background-light": "#f5f7f8",
+                        "background-dark": "#0f1d23",
+                    },
+                    fontFamily: {
+                        "display": ["Inter", "sans-serif"]
+                    },
+                    borderRadius: {
+                        "DEFAULT": "0.5rem",
+                        "lg": "1rem",
+                        "xl": "1.5rem",
+                        "full": "9999px"
+                    },
+                },
+            },
+        }
+    </script>
+<style>
+        .material-symbols-outlined {
+            font-variation-settings:
+            'FILL' 0,
+            'wght' 400,
+            'GRAD' 0,
+            'opsz' 24
+        }
+    </style>
+</head>
+<body class="bg-background-light dark:bg-background-dark font-display">
+<div class="relative flex min-h-screen w-full">
+<!-- Side Navigation Bar -->
+<aside class="flex flex-col w-64 bg-background-light dark:bg-[#111618] border-r border-slate-200/10 dark:border-white/10 p-4">
+<div class="flex flex-col gap-4 mb-auto">
+<div class="flex gap-3 items-center">
+<div class="bg-center bg-no-repeat aspect-square bg-cover rounded-full size-10" data-alt="User avatar image" style='background-image: url("https://lh3.googleusercontent.com/aida-public/AB6AXuAf73MFDMnHD8ebOzJNWAUl86etRurSIXEkw8XgGNdd0owWOqyK5-7YLlxhCbNSVy54r5T7Y6HG5KQphTyzQPYhXhHGf8BEP1K2M1mumuGvREQwoYZ-L5JCSqNRHtfkptlu4MLCefOr7AO-kUgOWnTmcf81rOx3XtzhkR1dzUWh9h1GYz_ol7Etdv8BDL6lCA0CpQGYefMHc73G1JWUar4CSll8LWzE0Vd4HKuVLqHXuaEG2vDztOBhihYTHNLVPnWQs83mcr4M4RQ");'></div>
+<div class="flex flex-col">
+<h1 class="text-slate-900 dark:text-white text-base font-medium leading-normal">Eleonor</h1>
+<p class="text-slate-500 dark:text-[#9bb1bb] text-sm font-normal leading-normal">eleonor.rigby@email.com</p>
+</div>
+</div>
+<nav class="flex flex-col gap-2 mt-4">
+<a class="flex items-center gap-3 px-3 py-2 rounded-lg bg-primary/20 dark:bg-[#27343a]" href="#">
+<span class="material-symbols-outlined text-primary dark:text-white">key</span>
+<p class="text-primary dark:text-white text-sm font-medium leading-normal">Passwords</p>
+</a>
+<a class="flex items-center gap-3 px-3 py-2 rounded-lg hover:bg-black/5 dark:hover:bg-white/5" href="#">
+<span class="material-symbols-outlined text-slate-700 dark:text-white">description</span>
+<p class="text-slate-700 dark:text-white text-sm font-medium leading-normal">Secure Notes</p>
+</a>
+<a class="flex items-center gap-3 px-3 py-2 rounded-lg hover:bg-black/5 dark:hover:bg-white/5" href="#">
+<span class="material-symbols-outlined text-slate-700 dark:text-white">badge</span>
+<p class="text-slate-700 dark:text-white text-sm font-medium leading-normal">Identities</p>
+</a>
+<a class="flex items-center gap-3 px-3 py-2 rounded-lg hover:bg-black/5 dark:hover:bg-white/5" href="#">
+<span class="material-symbols-outlined text-slate-700 dark:text-white">spark</span>
+<p class="text-slate-700 dark:text-white text-sm font-medium leading-normal">Password Generator</p>
+</a>
+</nav>
+</div>
+<div class="flex flex-col gap-4">
+<button class="flex min-w-[84px] cursor-pointer items-center justify-center overflow-hidden rounded-lg h-10 px-4 bg-primary text-slate-900 text-sm font-bold leading-normal tracking-[0.015em]">
+<span class="truncate">Upgrade to Premium</span>
+</button>
+<div class="flex flex-col gap-1">
+<a class="flex items-center gap-3 px-3 py-2 rounded-lg hover:bg-black/5 dark:hover:bg-white/5" href="#">
+<span class="material-symbols-outlined text-slate-700 dark:text-white">settings</span>
+<p class="text-slate-700 dark:text-white text-sm font-medium leading-normal">Settings</p>
+</a>
+<a class="flex items-center gap-3 px-3 py-2 rounded-lg hover:bg-black/5 dark:hover:bg-white/5" href="#">
+<span class="material-symbols-outlined text-slate-700 dark:text-white">help</span>
+<p class="text-slate-700 dark:text-white text-sm font-medium leading-normal">Help</p>
+</a>
+</div>
+</div>
+</aside>
+<!-- Main Content -->
+<main class="flex-1 p-8 overflow-y-auto">
+<div class="flex flex-wrap justify-between gap-3 mb-8">
+<p class="text-slate-900 dark:text-white text-4xl font-black leading-tight tracking-[-0.033em] min-w-72">Manage Passwords</p>
+</div>
+<div class="grid grid-cols-1 lg:grid-cols-2 gap-8">
+<!-- New Entry Card -->
+<div class="bg-white dark:bg-[#111618] rounded-xl p-6 shadow-sm">
+<h2 class="text-slate-900 dark:text-white text-lg font-bold leading-tight tracking-[-0.015em] mb-6">Nueva entrada</h2>
+<div class="flex flex-col gap-4">
+<label class="flex flex-col w-full">
+<p class="text-slate-700 dark:text-white text-base font-medium leading-normal pb-2">Título</p>
+<input class="form-input flex w-full min-w-0 flex-1 resize-none overflow-hidden rounded-lg text-slate-900 dark:text-white focus:outline-0 focus:ring-2 focus:ring-primary/50 border-slate-300 dark:border-[#3a4c55] bg-background-light dark:bg-[#1b2327] focus:border-primary/50 dark:focus:border-[#3a4c55] h-14 placeholder:text-slate-400 dark:placeholder:text-[#9bb1bb] p-[15px] text-base font-normal leading-normal" placeholder="e.g., Google Account" value=""/>
+</label>
+<label class="flex flex-col w-full">
+<p class="text-slate-700 dark:text-white text-base font-medium leading-normal pb-2">Usuario / Email</p>
+<input class="form-input flex w-full min-w-0 flex-1 resize-none overflow-hidden rounded-lg text-slate-900 dark:text-white focus:outline-0 focus:ring-2 focus:ring-primary/50 border-slate-300 dark:border-[#3a4c55] bg-background-light dark:bg-[#1b2327] focus:border-primary/50 dark:focus:border-[#3a4c55] h-14 placeholder:text-slate-400 dark:placeholder:text-[#9bb1bb] p-[15px] text-base font-normal leading-normal" placeholder="user@example.com" value=""/>
+</label>
+<label class="flex flex-col w-full">
+<p class="text-slate-700 dark:text-white text-base font-medium leading-normal pb-2">URL</p>
+<input class="form-input flex w-full min-w-0 flex-1 resize-none overflow-hidden rounded-lg text-slate-900 dark:text-white focus:outline-0 focus:ring-2 focus:ring-primary/50 border-slate-300 dark:border-[#3a4c55] bg-background-light dark:bg-[#1b2327] focus:border-primary/50 dark:focus:border-[#3a4c55] h-14 placeholder:text-slate-400 dark:placeholder:text-[#9bb1bb] p-[15px] text-base font-normal leading-normal" placeholder="https://www.example.com" value=""/>
+</label>
+<label class="flex flex-col w-full">
+<p class="text-slate-700 dark:text-white text-base font-medium leading-normal pb-2">Contraseña</p>
+<div class="relative">
+<input class="form-input flex w-full min-w-0 flex-1 resize-none overflow-hidden rounded-lg text-slate-900 dark:text-white focus:outline-0 focus:ring-2 focus:ring-primary/50 border-slate-300 dark:border-[#3a4c55] bg-background-light dark:bg-[#1b2327] focus:border-primary/50 dark:focus:border-[#3a4c55] h-14 placeholder:text-slate-400 dark:placeholder:text-[#9bb1bb] p-[15px] text-base font-normal leading-normal pr-12" placeholder="••••••••••••" type="password" value="Str0ngP@ssw0rd!"/>
+<button class="absolute inset-y-0 right-0 flex items-center pr-4 text-slate-500 dark:text-[#9bb1bb] hover:text-primary">
+<span class="material-symbols-outlined">visibility_off</span>
+</button>
+</div>
+<div class="mt-2 flex items-center gap-2">
+<div class="w-full h-1.5 bg-slate-200 dark:bg-[#1b2327] rounded-full overflow-hidden">
+<div class="h-full bg-green-500" style="width: 85%;"></div>
+</div>
+<span class="text-sm font-medium text-green-500">Strong</span>
+</div>
+</label>
+<label class="flex flex-col w-full">
+<p class="text-slate-700 dark:text-white text-base font-medium leading-normal pb-2">Nota</p>
+<textarea class="form-textarea flex w-full min-w-0 flex-1 resize-y overflow-hidden rounded-lg text-slate-900 dark:text-white focus:outline-0 focus:ring-2 focus:ring-primary/50 border-slate-300 dark:border-[#3a4c55] bg-background-light dark:bg-[#1b2327] focus:border-primary/50 dark:focus:border-[#3a4c55] h-28 placeholder:text-slate-400 dark:placeholder:text-[#9bb1bb] p-[15px] text-base font-normal leading-normal" placeholder="Add any relevant notes here..."></textarea>
+</label>
+<button class="flex mt-4 min-w-[84px] cursor-pointer items-center justify-center overflow-hidden rounded-lg h-12 px-4 bg-primary text-slate-900 text-base font-bold leading-normal tracking-[0.015em] hover:opacity-90">
+<span class="truncate">Guardar</span>
+</button>
+</div>
+</div>
+<!-- My Entries Card -->
+<div class="bg-white dark:bg-[#111618] rounded-xl p-6 shadow-sm">
+<h2 class="text-slate-900 dark:text-white text-lg font-bold leading-tight tracking-[-0.015em] mb-6">Mis entradas</h2>
+<div class="flex flex-col space-y-4">
+<!-- Entry Item 1 -->
+<div class="flex items-center p-4 rounded-lg bg-background-light dark:bg-[#1b2327]">
+<div class="flex-grow">
+<p class="text-slate-900 dark:text-white text-base font-medium">Google Account</p>
+<p class="text-slate-500 dark:text-[#9bb1bb] text-sm">user@gmail.com</p>
+</div>
+<div class="flex items-center space-x-2">
+<button class="p-2 rounded-full hover:bg-black/10 dark:hover:bg-white/10 text-slate-500 dark:text-[#9bb1bb] hover:text-primary"><span class="material-symbols-outlined text-xl">visibility</span></button>
+<button class="p-2 rounded-full hover:bg-black/10 dark:hover:bg-white/10 text-slate-500 dark:text-[#9bb1bb] hover:text-primary"><span class="material-symbols-outlined text-xl">edit</span></button>
+<button class="p-2 rounded-full hover:bg-black/10 dark:hover:bg-white/10 text-slate-500 dark:text-[#9bb1bb] hover:text-red-500"><span class="material-symbols-outlined text-xl">delete</span></button>
+</div>
+</div>
+<!-- Entry Item 2 -->
+<div class="flex items-center p-4 rounded-lg bg-background-light dark:bg-[#1b2327]">
+<div class="flex-grow">
+<p class="text-slate-900 dark:text-white text-base font-medium">GitHub</p>
+<p class="text-slate-500 dark:text-[#9bb1bb] text-sm">eleonor.creative</p>
+</div>
+<div class="flex items-center space-x-2">
+<button class="p-2 rounded-full hover:bg-black/10 dark:hover:bg-white/10 text-slate-500 dark:text-[#9bb1bb] hover:text-primary"><span class="material-symbols-outlined text-xl">visibility</span></button>
+<button class="p-2 rounded-full hover:bg-black/10 dark:hover:bg-white/10 text-slate-500 dark:text-[#9bb1bb] hover:text-primary"><span class="material-symbols-outlined text-xl">edit</span></button>
+<button class="p-2 rounded-full hover:bg-black/10 dark:hover:bg-white/10 text-slate-500 dark:text-[#9bb1bb] hover:text-red-500"><span class="material-symbols-outlined text-xl">delete</span></button>
+</div>
+</div>
+<!-- Entry Item 3 -->
+<div class="flex items-center p-4 rounded-lg bg-background-light dark:bg-[#1b2327]">
+<div class="flex-grow">
+<p class="text-slate-900 dark:text-white text-base font-medium">Amazon</p>
+<p class="text-slate-500 dark:text-[#9bb1bb] text-sm">eleonor.rigby@email.com</p>
+</div>
+<div class="flex items-center space-x-2">
+<button class="p-2 rounded-full hover:bg-black/10 dark:hover:bg-white/10 text-slate-500 dark:text-[#9bb1bb] hover:text-primary"><span class="material-symbols-outlined text-xl">visibility</span></button>
+<button class="p-2 rounded-full hover:bg-black/10 dark:hover:bg-white/10 text-slate-500 dark:text-[#9bb1bb] hover:text-primary"><span class="material-symbols-outlined text-xl">edit</span></button>
+<button class="p-2 rounded-full hover:bg-black/10 dark:hover:bg-white/10 text-slate-500 dark:text-[#9bb1bb] hover:text-red-500"><span class="material-symbols-outlined text-xl">delete</span></button>
+</div>
+</div>
+<!-- Empty State (Example) -->
+<!-- <div class="flex flex-col items-center justify-center text-center p-10 border-2 border-dashed border-slate-300 dark:border-[#3a4c55] rounded-lg">
+                            <span class="material-symbols-outlined text-5xl text-slate-400 dark:text-[#9bb1bb]">lock</span>
+                            <p class="mt-4 text-slate-700 dark:text-white font-medium">No tienes entradas guardadas</p>
+                            <p class="text-sm text-slate-500 dark:text-[#9bb1bb]">Crea una nueva entrada para empezar.</p>
+                        </div> -->
+</div>
+</div>
+</div>
+</main>
+</div>
+</body></html>

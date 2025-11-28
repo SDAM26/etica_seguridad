@@ -1,0 +1,169 @@
+<!DOCTYPE html>
+
+<html class="dark" lang="es"><head>
+<meta charset="utf-8"/>
+<meta content="width=device-width, initial-scale=1.0" name="viewport"/>
+<title>Password Generator</title>
+<script src="https://cdn.tailwindcss.com?plugins=forms,container-queries"></script>
+<link href="https://fonts.googleapis.com" rel="preconnect"/>
+<link crossorigin="" href="https://fonts.gstatic.com" rel="preconnect"/>
+<link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;700;900&amp;display=swap" rel="stylesheet"/>
+<link href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined" rel="stylesheet"/>
+<script>
+        tailwind.config = {
+            darkMode: "class",
+            theme: {
+                extend: {
+                    colors: {
+                        "primary": "#7dd4fc",
+                        "background-light": "#f5f7f8",
+                        "background-dark": "#0f1d23",
+                    },
+                    fontFamily: {
+                        "display": ["Inter", "sans-serif"]
+                    },
+                    borderRadius: {
+                        "DEFAULT": "0.5rem",
+                        "lg": "1rem",
+                        "xl": "1.5rem",
+                        "full": "9999px"
+                    },
+                },
+            },
+        }
+    </script>
+<style>
+        .material-symbols-outlined {
+            font-variation-settings:
+            'FILL' 0,
+            'wght' 400,
+            'GRAD' 0,
+            'opsz' 24
+        }
+    </style>
+</head>
+<body class="bg-background-dark font-display">
+<div class="relative flex min-h-screen w-full">
+<!-- SideNavBar -->
+<aside class="flex-shrink-0 w-64 bg-[#111618] border-r border-white/10">
+<div class="flex h-full flex-col justify-between p-4">
+<div class="flex flex-col gap-4">
+<div class="flex items-center gap-3 p-2">
+<div class="bg-center bg-no-repeat aspect-square bg-cover rounded-full size-10" data-alt="User avatar with an abstract gradient" style='background-image: url("https://lh3.googleusercontent.com/aida-public/AB6AXuD-mwjehoZbd0qlu0LJwTukmKQPbozmnHc9CUZTE50hAfNh6iUC3mDaD1oxG4icliUtml2kvTzdi_NQio8Bm6Owq92MTalSZ2Y_zVMtZ0AIywV6vrA6GHFwSWk9QsJsvy-unf_kFZXkCOfVSa9yEfAqPnt3_Fj3Krjf_EwiQbnfyqumHU375ejzujIe_CEy51O8avWef4Lpyk3LAa0XUbqHkMxPGjnfM-d8WMhc7wyjb1y-YDReeAVPtgjE9zKRHCVmGrktuIxVysw");'></div>
+<div class="flex flex-col">
+<h1 class="text-white text-base font-medium leading-normal">John Doe</h1>
+<p class="text-[#9bb1bb] text-sm font-normal leading-normal">john.doe@email.com</p>
+</div>
+</div>
+<nav class="flex flex-col gap-2">
+<a class="flex items-center gap-3 px-3 py-2 rounded-lg text-white/70 hover:bg-white/5 hover:text-white transition-colors" href="#">
+<span class="material-symbols-outlined text-white">dashboard</span>
+<p class="text-sm font-medium leading-normal">Dashboard</p>
+</a>
+<a class="flex items-center gap-3 px-3 py-2 rounded-lg text-white/70 hover:bg-white/5 hover:text-white transition-colors" href="#">
+<span class="material-symbols-outlined text-white">lock</span>
+<p class="text-sm font-medium leading-normal">Vault</p>
+</a>
+<a class="flex items-center gap-3 px-3 py-2 rounded-lg text-white/70 hover:bg-white/5 hover:text-white transition-colors" href="#">
+<span class="material-symbols-outlined text-white">pulse_alert</span>
+<p class="text-sm font-medium leading-normal">Password Health</p>
+</a>
+<a class="flex items-center gap-3 px-3 py-2 rounded-lg text-white/70 hover:bg-white/5 hover:text-white transition-colors" href="#">
+<span class="material-symbols-outlined text-white">shield_lock</span>
+<p class="text-sm font-medium leading-normal">Security</p>
+</a>
+<a class="flex items-center gap-3 px-3 py-2 rounded-lg bg-[#27343a]" href="#">
+<span class="material-symbols-outlined text-white" style="font-variation-settings: 'FILL' 1;">radio_button_checked</span>
+<p class="text-white text-sm font-medium leading-normal">Generator</p>
+</a>
+</nav>
+</div>
+<div class="flex flex-col gap-4">
+<button class="flex min-w-[84px] cursor-pointer items-center justify-center overflow-hidden rounded-xl h-10 px-4 bg-primary text-[#111618] text-sm font-bold leading-normal tracking-[0.015em] hover:bg-primary/90 transition-colors">
+<span class="truncate">Add New Login</span>
+</button>
+<div class="flex flex-col gap-1">
+<a class="flex items-center gap-3 px-3 py-2 rounded-lg text-white/70 hover:bg-white/5 hover:text-white transition-colors" href="#">
+<span class="material-symbols-outlined text-white">settings</span>
+<p class="text-sm font-medium leading-normal">Settings</p>
+</a>
+<a class="flex items-center gap-3 px-3 py-2 rounded-lg text-white/70 hover:bg-white/5 hover:text-white transition-colors" href="#">
+<span class="material-symbols-outlined text-white">help</span>
+<p class="text-sm font-medium leading-normal">Help</p>
+</a>
+</div>
+</div>
+</div>
+</aside>
+<!-- Main Content -->
+<main class="flex-1 p-8 overflow-y-auto">
+<div class="max-w-4xl mx-auto">
+<!-- PageHeading -->
+<div class="flex flex-wrap justify-between gap-3 mb-8">
+<h1 class="text-white text-4xl font-black leading-tight tracking-[-0.033em] min-w-72">Generador de Contraseña</h1>
+</div>
+<!-- Main Generator Card -->
+<div class="bg-[#1b2327] rounded-xl p-6 md:p-8 space-y-8">
+<!-- Generated Password Section -->
+<div class="space-y-4">
+<div class="flex flex-col md:flex-row md:items-center md:justify-between gap-4">
+<label class="flex flex-col min-w-40 flex-1">
+<p class="text-white text-base font-medium leading-normal pb-2">Contraseña Generada</p>
+<div class="relative flex w-full flex-1 items-stretch rounded-xl">
+<input class="form-input text-lg flex w-full min-w-0 flex-1 resize-none overflow-hidden rounded-xl text-white focus:outline-0 focus:ring-2 focus:ring-primary/50 border border-[#3a4c55] bg-[#0f1d23] h-14 placeholder:text-[#9bb1bb] p-[15px] pr-12" readonly="" value="********************"/>
+<button aria-label="Toggle password visibility" class="absolute inset-y-0 right-0 text-[#9bb1bb] flex items-center justify-center px-4 hover:text-white transition-colors">
+<span class="material-symbols-outlined">visibility_off</span>
+</button>
+</div>
+</label>
+<div class="flex items-center gap-2 pt-8">
+<button class="flex items-center justify-center gap-2 min-w-[84px] cursor-pointer overflow-hidden rounded-xl h-10 px-4 bg-[#3a4c55] text-white text-sm font-bold hover:bg-[#4a5c65] transition-colors">
+<span class="material-symbols-outlined text-base">content_copy</span>
+<span>Copiar</span>
+</button>
+<button class="flex min-w-[84px] cursor-pointer items-center justify-center overflow-hidden rounded-xl h-10 px-4 bg-primary text-[#111618] text-sm font-bold hover:bg-primary/90 transition-colors">
+<span class="truncate">Usar en 'Contraseña'</span>
+</button>
+</div>
+</div>
+<div class="flex flex-col gap-3">
+<div class="flex gap-6 justify-between items-center">
+<p class="text-white text-base font-medium leading-normal">Fuerza: <span class="text-green-400">Fuerte</span></p>
+</div>
+<div class="w-full bg-[#3a4c55] rounded-full h-2">
+<div class="bg-green-400 h-2 rounded-full" style="width: 95%;"></div>
+</div>
+</div>
+</div>
+<!-- Divider -->
+<hr class="border-t border-white/10"/>
+<!-- Options Section -->
+<div class="space-y-6">
+<div class="flex flex-col md:flex-row md:items-center gap-6">
+<div class="flex-1">
+<label class="text-white text-base font-medium leading-normal" for="password-length">Longitud de la contraseña</label>
+<div class="flex items-center gap-4 mt-2">
+<input class="w-full h-2 bg-[#3a4c55] rounded-lg appearance-none cursor-pointer accent-primary" id="password-length" max="128" min="8" type="range" value="20"/>
+<input class="w-24 form-input text-center rounded-xl text-white focus:outline-0 focus:ring-2 focus:ring-primary/50 border border-[#3a4c55] bg-[#0f1d23] h-12 placeholder:text-[#9bb1bb]" max="128" min="8" type="number" value="20"/>
+</div>
+</div>
+</div>
+<div class="flex items-center">
+<input checked="" class="h-5 w-5 rounded border-[#3a4c55] bg-[#0f1d23] text-primary focus:ring-primary/50" id="use-symbols" type="checkbox"/>
+<label class="ml-3 text-white text-base font-medium leading-normal" for="use-symbols">Usar símbolos (e.g. @#$%)</label>
+</div>
+</div>
+<!-- Action Buttons -->
+<div class="flex flex-col md:flex-row items-center gap-4 pt-4">
+<button class="w-full md:w-auto flex min-w-[84px] cursor-pointer items-center justify-center overflow-hidden rounded-xl h-12 px-6 bg-primary text-[#111618] text-base font-bold leading-normal tracking-[0.015em] hover:bg-primary/90 transition-colors">
+<span class="truncate">Generar</span>
+</button>
+<button class="w-full md:w-auto flex min-w-[84px] cursor-pointer items-center justify-center overflow-hidden rounded-xl h-12 px-6 bg-transparent text-primary text-base font-bold leading-normal tracking-[0.015em] border border-primary hover:bg-primary/10 transition-colors">
+<span class="truncate">Calificar</span>
+</button>
+</div>
+</div>
+</div>
+</main>
+</div>
+</body></html>

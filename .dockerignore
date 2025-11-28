@@ -1,0 +1,74 @@
+# Git
+.git
+.gitignore
+.gitattributes
+
+# Python
+__pycache__
+*.py[cod]
+*$py.class
+*.so
+.Python
+*.egg-info/
+dist/
+build/
+*.egg
+.pytest_cache/
+.coverage
+htmlcov/
+
+# Virtual environments
+venv/
+env/
+ENV/
+.venv
+
+# IDEs
+.vscode/
+.idea/
+*.swp
+*.swo
+*.swn
+.DS_Store
+Thumbs.db
+
+# Base de datos (se genera en runtime)
+*.db
+*.db-journal
+*.db-shm
+*.db-wal
+data/*.db
+
+# Jupyter
+*.ipynb
+.ipynb_checkpoints/
+data/data.ipynb
+
+# Logs
+*.log
+logs/
+
+# Docker
+Dockerfile
+docker-compose.yml
+.dockerignore
+
+# Documentación (opcional)
+README.md
+*.md
+
+# Archivos de configuración locales
+.env
+.env.local
+.env.*.local
+
+# Archivos temporales
+nul
+*.tmp
+*.temp
+
+# Archivos legacy (si no se usan)
+frontend/login.html
+frontend/styles.css
+frontend/app-legacy.js
+frontend/index-legacy.html

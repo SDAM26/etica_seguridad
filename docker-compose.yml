@@ -1,0 +1,36 @@
+services:
+  password-manager:
+    build:
+      context: .
+      dockerfile: Dockerfile
+    container_name: password-manager
+    ports:
+      - "8080:80"     # HTTP
+      - "8443:443"    # HTTPS
+    volumes:
+      # Base de datos persistente
+      - ./data:/app/data
+      # Certificados SSL
+      - ./ssl:/app/ssl:ro
+      # Cachear modelo de InsightFace (evita re-descarga de ~100MB)
+      - insightface-models:/root/.insightface
+      # Hot-reload para desarrollo (opcional, comentar en producción)
+      - ./backend:/app/backend
+      - ./frontend:/app/frontend
+    environment:
+      # Cambiar en producción
+      - JWT_SECRET=${JWT_SECRET:-dev_secret_please_change_in_production}
+      - JWT_EXPIRE_MIN=${JWT_EXPIRE_MIN:-120}
+      - DB_PATH=/app/data/server.db
+      - PYTHONUNBUFFERED=1
+    restart: unless-stopped
+    networks:
+      - password-manager-network
+
+networks:
+  password-manager-network:
+    driver: bridge
+
+volumes:
+  insightface-models:
+    driver: local

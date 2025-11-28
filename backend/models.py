@@ -10,6 +10,12 @@ class User(Base):
     pwd_hash: Mapped[bytes] = mapped_column(LargeBinary, nullable=False)
     salt_auth: Mapped[bytes] = mapped_column(LargeBinary, nullable=False)
     salt_user: Mapped[bytes] = mapped_column(LargeBinary, nullable=False)
+    
+    # --- NUEVO CAMPO ---
+    # Almacena el embedding ArcFace del usuario.
+    face_embedding: Mapped[bytes | None] = mapped_column(LargeBinary)
+    # --- FIN NUEVO CAMPO ---
+    
     created_at: Mapped[str] = mapped_column(DateTime(timezone=True), server_default=func.now())
     entries: Mapped[list["VaultEntry"]] = relationship(back_populates="user", cascade="all, delete-orphan")
 
@@ -17,11 +23,9 @@ class VaultEntry(Base):
     __tablename__ = "vault_entries"
     id: Mapped[int] = mapped_column(Integer, primary_key=True, autoincrement=True)
     user_id: Mapped[int] = mapped_column(Integer, ForeignKey("users.id", ondelete="CASCADE"), nullable=False)
-    title: Mapped[str] = mapped_column(String(255), nullable=False)
-    username: Mapped[str | None] = mapped_column(String(255))
-    url: Mapped[str | None] = mapped_column(String(1024))
-    note: Mapped[str | None] = mapped_column(Text)
 
+    # TODO el contenido cifrado (title, username, url, note, secret) se guarda en ciphertext
+    # Formato: JSON cifrado con AES-GCM que contiene {title, username, url, note, secret_plain}
     iv: Mapped[bytes] = mapped_column(LargeBinary, nullable=False)
     ciphertext: Mapped[bytes] = mapped_column(LargeBinary, nullable=False)
     tag: Mapped[bytes] = mapped_column(LargeBinary, nullable=False)

@@ -1,0 +1,2 @@
+# Ignorar cualquier archivo .db en cualquier carpeta
+*.db
