@@ -2292,37 +2292,7 @@ openssl rand -hex 32
 docker compose up -d
 ```
 
-### 12.4 Métricas del Proyecto
-
-**Líneas de código:**
-- Backend Python: 639 líneas
-- Frontend (HTML+JS+CSS): 1,910 líneas
-- Docker + Scripts: 216 líneas
-- **Total funcional: ~3,092 líneas**
-
-**Documentación:**
-- README.md: 46KB (este documento)
-- DOCKER_README.md: 7KB
-- INICIO_RAPIDO.md: 2KB
-- **Total documentación: ~55KB**
-
-**Dependencias:**
-- Python packages: 78 (requirements.txt)
-- JavaScript libraries: 0 (vanilla JS + Web Crypto API nativo)
-- Sistema: Nginx, Docker
-
-**Tamaño de despliegue:**
-- Imagen Docker comprimida: ~600MB
-- Imagen Docker descomprimida: ~1.5GB
-- Modelo InsightFace (buffalo_l): ~370MB
-- Base de datos SQLite: <1MB (vacía), crece con uso
-
-**Tiempo de despliegue:**
-- Primera construcción: 3-5 minutos
-- Reconstrucciones: <30 segundos (gracias a caché)
-- Inicio del contenedor: ~5-10 segundos
-
-### 12.5 Contacto y Soporte
+### 12.4 Contacto y Soporte
 
 **Emails:** 
 - jorge.quenta@utec.edu.pe
