@@ -8,6 +8,7 @@ from schemas import *
 from auth import create_user, authenticate_user, create_access_token, get_current_user, get_kmix_header
 from crypto import aes_gcm_encrypt, aes_gcm_decrypt, gen_password, pwd_score, b64u
 import json
+import logging
 
 # --- NUEVAS IMPORTACIONES ---
 import numpy as np
@@ -17,6 +18,13 @@ from face_rec import (
     data_url_to_bytes
 )
 # --- FIN NUEVAS IMPORTACIONES ---
+
+# Configurar logging
+logging.basicConfig(
+    level=logging.INFO,
+    format='%(asctime)s - %(name)s - %(levelname)s - %(message)s'
+)
+logger = logging.getLogger(__name__)
 
 app = FastAPI(title="Password Manager API (SQLite)")
 
@@ -76,28 +84,32 @@ def verify_face_for_vault(
     Esto se llama ANTES de descifrar una contraseña.
     """
     if not user.face_embedding:
+        logger.warning(f"Verificación facial fallida: Usuario sin embedding registrado - {user.email}")
         raise HTTPException(400, "El usuario no tiene un rostro registrado. No se puede verificar.")
-    
+
     try:
         img_bytes = data_url_to_bytes(data.image_data_url)
         new_emb = get_arcface_embedding_from_bytes(img_bytes)
-        
+
         if new_emb is None:
+            logger.warning(f"Verificación facial fallida: No se detectó rostro - {user.email}")
             return {"verified": False, "similarity": 0.0}
-        
+
         # Cargar el embedding guardado
         stored_emb = np.frombuffer(user.face_embedding, dtype=np.float32)
-        
+
         sim = cosine_similarity(stored_emb, new_emb)
         threshold = 0.45  # Umbral de confianza
-        
+
         if sim >= threshold:
+            logger.info(f"Verificación facial exitosa: {user.email} (similaridad: {sim:.3f})")
             return {"verified": True, "similarity": float(sim)}
         else:
+            logger.warning(f"Verificación facial fallida: Similaridad insuficiente - {user.email} (similaridad: {sim:.3f}, threshold: {threshold})")
             return {"verified": False, "similarity": float(sim)}
-            
+
     except Exception as e:
-        print(f"Error durante la verificación facial: {e}")
+        logger.error(f"Error durante verificación facial para {user.email}: {str(e)}")
         return {"verified": False, "similarity": 0.0}
 # --- FIN NUEVO ENDPOINT ---
 
@@ -126,6 +138,7 @@ def create_entry(
     )
     db.add(entry); db.commit(); db.refresh(entry)
     del json_bytes
+    logger.info(f"Entrada creada: ID={entry.id}, Usuario={user.email}, Título={data.title}")
     # No devolvemos ningún dato sensible, todo está cifrado
     return EntryView(id=entry.id)
 
@@ -188,6 +201,7 @@ def get_entry(
 def update_entry(entry_id: int, data: EntryUpdate, user: User = Depends(get_current_user), kmix: bytes = Depends(get_kmix_header), db: Session = Depends(get_db)):
     r = db.query(VaultEntry).filter_by(id=entry_id, user_id=user.id).first()
     if not r:
+        logger.warning(f"Actualización fallida: Entrada no encontrada - ID={entry_id}, Usuario={user.email}")
         raise HTTPException(404, "No existe")
 
     # Descifrar el contenido actual
@@ -195,6 +209,7 @@ def update_entry(entry_id: int, data: EntryUpdate, user: User = Depends(get_curr
         json_bytes = aes_gcm_decrypt(kmix, r.iv, r.ciphertext, r.tag)
         entry_data = json.loads(json_bytes.decode("utf-8"))
     except Exception:
+        logger.error(f"Actualización fallida: Error al descifrar - ID={entry_id}, Usuario={user.email}")
         raise HTTPException(400, "Error al descifrar. K_mix incorrecto.")
 
     # Actualizar solo los campos que se enviaron
@@ -211,12 +226,15 @@ def update_entry(entry_id: int, data: EntryUpdate, user: User = Depends(get_curr
     del json_bytes
 
     db.commit(); db.refresh(r)
+    logger.info(f"Entrada actualizada: ID={entry_id}, Usuario={user.email}, Título={entry_data.get('title')}")
     return EntryView(id=r.id)
 
 @app.delete("/vault/{entry_id}")
 def delete_entry(entry_id: int, user: User = Depends(get_current_user), db: Session = Depends(get_db)):
     r = db.query(VaultEntry).filter_by(id=entry_id, user_id=user.id).first()
     if not r:
+        logger.warning(f"Eliminación fallida: Entrada no encontrada - ID={entry_id}, Usuario={user.email}")
         raise HTTPException(404, "No existe")
     db.delete(r); db.commit()
+    logger.info(f"Entrada eliminada: ID={entry_id}, Usuario={user.email}")
     return {"ok": True}

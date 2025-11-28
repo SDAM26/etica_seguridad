@@ -1,5 +1,6 @@
 from __future__ import annotations
 import time, os
+import logging
 import jwt
 from passlib.hash import pbkdf2_sha256
 from fastapi import HTTPException, status, Depends, Header
@@ -11,6 +12,13 @@ from crypto import b64u, ub64u
 # --- NUEVAS IMPORTACIONES ---
 from face_rec import get_arcface_embedding_from_bytes, data_url_to_bytes
 # --- FIN NUEVAS IMPORTACIONES ---
+
+# Configurar logging
+logging.basicConfig(
+    level=logging.INFO,
+    format='%(asctime)s - %(name)s - %(levelname)s - %(message)s'
+)
+logger = logging.getLogger(__name__)
 
 JWT_SECRET = os.environ.get("JWT_SECRET", "dev_secret_change_me")
 JWT_EXPIRE_MIN = int(os.environ.get("JWT_EXPIRE_MIN", "120"))
@@ -25,37 +33,48 @@ def verify_password(password: str, salt_auth: bytes, pwd_hash: bytes) -> bool:
     return pbkdf2_sha256.using(rounds=210_000, salt=salt_auth).verify(password, pwd_hash.decode("utf-8"))
 
 def create_user(db: Session, data: RegisterIn) -> User:
-    if db.query(User).filter_by(email=data.email.lower()).first():
+    email_lower = data.email.lower()
+    if db.query(User).filter_by(email=email_lower).first():
+        logger.warning(f"Registro fallido: Email ya existe - {email_lower}")
         raise HTTPException(status_code=400, detail="Email ya registrado")
-    
+
     # --- NUEVA LÓGICA FACIAL ---
     try:
         img_bytes = data_url_to_bytes(data.image_data_url)
         embedding = get_arcface_embedding_from_bytes(img_bytes)
         if embedding is None:
+            logger.warning(f"Registro fallido: No se detectó rostro - {email_lower}")
             raise HTTPException(status_code=400, detail="No se detectó un rostro claro en la foto. Intenta de nuevo.")
     except Exception as e:
+        logger.error(f"Registro fallido: Error procesando imagen para {email_lower} - {str(e)}")
         raise HTTPException(status_code=400, detail=f"Error procesando imagen: {e}")
     # --- FIN LÓGICA FACIAL ---
 
     salt_auth = _randbytes(16)
     salt_user = _randbytes(16)
     pwd_hash = hash_password(data.password, salt_auth)
-    
+
     u = User(
-        email=data.email.lower(), 
-        pwd_hash=pwd_hash, 
-        salt_auth=salt_auth, 
+        email=email_lower,
+        pwd_hash=pwd_hash,
+        salt_auth=salt_auth,
         salt_user=salt_user,
         face_embedding=embedding.tobytes() # <-- Guardamos el embedding
     )
     db.add(u); db.commit(); db.refresh(u)
+    logger.info(f"Usuario registrado exitosamente: {email_lower}")
     return u
 
 def authenticate_user(db: Session, data: LoginIn) -> User:
-    u = db.query(User).filter_by(email=data.email.lower()).first()
-    if not u or not verify_password(data.password, u.salt_auth, u.pwd_hash):
+    email_lower = data.email.lower()
+    u = db.query(User).filter_by(email=email_lower).first()
+    if not u:
+        logger.warning(f"Login fallido: Usuario no encontrado - {email_lower}")
         raise HTTPException(status_code=401, detail="Credenciales inválidas")
+    if not verify_password(data.password, u.salt_auth, u.pwd_hash):
+        logger.warning(f"Login fallido: Contraseña incorrecta - {email_lower}")
+        raise HTTPException(status_code=401, detail="Credenciales inválidas")
+    logger.info(f"Login exitoso: {email_lower}")
     return u
 
 def create_access_token(user_id: int, email: str) -> str:

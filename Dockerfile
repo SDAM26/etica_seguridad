@@ -69,9 +69,10 @@ COPY --chown=appuser:appuser backend/ /app/backend/
 COPY --chown=appuser:appuser frontend/ /app/frontend/
 COPY --chown=appuser:appuser requirements.txt /app/
 
-# Configurar Nginx para servir frontend
+# Configurar Nginx para servir frontend con HTTP y HTTPS
 RUN rm /etc/nginx/sites-enabled/default
 COPY <<EOF /etc/nginx/sites-enabled/password-manager
+# HTTP (redirección opcional a HTTPS, comentar si se desea HTTP+HTTPS simultáneos)
 server {
     listen 80;
     server_name _;
@@ -84,7 +85,65 @@ server {
     }
 
     # Proxy para API del backend
-    # Nota: Se incluyen ambas versiones (con y sin trailing slash) para manejar todos los casos
+    location /auth {
+        proxy_pass http://127.0.0.1:8000;
+        proxy_set_header Host \$host;
+        proxy_set_header X-Real-IP \$remote_addr;
+        proxy_set_header X-Forwarded-For \$proxy_add_x_forwarded_for;
+        proxy_set_header X-Forwarded-Proto \$scheme;
+    }
+
+    location /vault {
+        proxy_pass http://127.0.0.1:8000;
+        proxy_set_header Host \$host;
+        proxy_set_header X-Real-IP \$remote_addr;
+        proxy_set_header X-Forwarded-For \$proxy_add_x_forwarded_for;
+        proxy_set_header X-Forwarded-Proto \$scheme;
+    }
+
+    location /tools {
+        proxy_pass http://127.0.0.1:8000;
+        proxy_set_header Host \$host;
+        proxy_set_header X-Real-IP \$remote_addr;
+        proxy_set_header X-Forwarded-For \$proxy_add_x_forwarded_for;
+        proxy_set_header X-Forwarded-Proto \$scheme;
+    }
+
+    location /docs {
+        proxy_pass http://127.0.0.1:8000;
+        proxy_set_header Host \$host;
+        proxy_set_header X-Real-IP \$remote_addr;
+    }
+
+    location /redoc {
+        proxy_pass http://127.0.0.1:8000;
+        proxy_set_header Host \$host;
+        proxy_set_header X-Real-IP \$remote_addr;
+    }
+}
+
+# HTTPS (requiere certificados SSL en /app/ssl/)
+server {
+    listen 443 ssl;
+    server_name _;
+
+    # Certificados SSL autofirmados
+    ssl_certificate /app/ssl/server.crt;
+    ssl_certificate_key /app/ssl/server.key;
+
+    # Configuración SSL moderna
+    ssl_protocols TLSv1.2 TLSv1.3;
+    ssl_ciphers HIGH:!aNULL:!MD5;
+    ssl_prefer_server_ciphers on;
+
+    # Servir frontend estático
+    location / {
+        root /app/frontend;
+        index index.html;
+        try_files \$uri \$uri/ /index.html;
+    }
+
+    # Proxy para API del backend
     location /auth {
         proxy_pass http://127.0.0.1:8000;
         proxy_set_header Host \$host;
@@ -124,7 +183,7 @@ server {
 EOF
 
 # Crear script de inicio con sintaxis correcta
-RUN printf '#!/bin/bash\nset -e\n\necho "=============================================="\necho "  Password Manager - Iniciando servicios"\necho "=============================================="\n\nnginx\n\nsleep 2\n\ncd /app/backend\n\necho ""\necho "✅ Servidor listo en:"\necho "   Frontend: http://localhost"\necho "   API Docs: http://localhost/docs"\necho ""\n\nexec uvicorn app:app --host 0.0.0.0 --port 8000 --log-level info\n' > /app/start.sh && \
+RUN printf '#!/bin/bash\nset -e\n\necho "=============================================="\necho "  Password Manager - Iniciando servicios"\necho "=============================================="\n\nnginx\n\nsleep 2\n\ncd /app/backend\n\necho ""\necho "✅ Servidor listo en:"\necho "   HTTP:  http://localhost"\necho "   HTTPS: https://localhost (certificado autofirmado)"\necho "   API Docs: http://localhost/docs"\necho ""\n\nexec uvicorn app:app --host 0.0.0.0 --port 8000 --log-level info\n' > /app/start.sh && \
     chmod +x /app/start.sh
 
 # Crear directorio para base de datos persistente
@@ -133,8 +192,8 @@ VOLUME ["/app/data"]
 # Volume para cachear modelo de InsightFace (evita re-descarga)
 VOLUME ["/root/.insightface"]
 
-# Exponer puerto 80 (Nginx sirve todo)
-EXPOSE 80
+# Exponer puertos 80 (HTTP) y 443 (HTTPS)
+EXPOSE 80 443
 
 # Variables de entorno
 ENV PYTHONUNBUFFERED=1

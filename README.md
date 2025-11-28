@@ -2,7 +2,9 @@
 
 ## Informe Técnico – Proyecto de Ética y Seguridad de Datos (DS3031)
 
-**Autor:** Jorge Eduardo Quenta Solis
+**Autores:** 
+- Jorge Eduardo Quenta Solis
+- Stuart Diego Arteaga Montes 
 **Institución:** Universidad de Ingeniería y Tecnología – UTEC
 **Curso:** Ética y Seguridad de Datos (DS3031)
 **Fecha:** Enero 2025
@@ -20,6 +22,12 @@
 7. [Reconocimiento Facial Biométrico](#7-reconocimiento-facial-biométrico)
 8. [Containerización con Docker](#8-containerización-con-docker)
 9. [Análisis de Riesgos y Mitigación](#9-análisis-de-riesgos-y-mitigación)
+   - 9.1 [Matriz de Riesgos](#91-matriz-de-riesgos)
+   - 9.2 [Análisis Detallado de Riesgos](#92-análisis-detallado-de-riesgos)
+   - 9.3 [Certificados SSL Autofirmados](#93-certificados-ssl-autofirmados)
+   - 9.4 [Análisis de Seguridad con Bandit](#94-análisis-de-seguridad-con-bandit)
+   - 9.5 [Plan de Respuesta a Incidentes](#95-plan-de-respuesta-a-incidentes)
+   - 9.6 [Sistema de Logging de Seguridad](#96-sistema-de-logging-de-seguridad)
 10. [Resultados y Lecciones Aprendidas](#10-resultados-y-lecciones-aprendidas)
 11. [Conclusiones y Recomendaciones Futuras](#11-conclusiones-y-recomendaciones-futuras)
 12. [Referencias y Anexos](#12-referencias-y-anexos)
@@ -137,9 +145,10 @@ Diseñar e implementar un gestor de contraseñas con arquitectura zero-knowledge
 - **RS1.4:** Los campos `iv`, `ciphertext` y `tag` deben almacenarse separadamente para validación de integridad.
 
 #### RS2: Protección de Datos en Tránsito
-- **RS2.1:** Toda comunicación debe realizarse sobre HTTPS (en producción).
+- **RS2.1:** Toda comunicación debe realizarse sobre HTTPS (certificados SSL autofirmados para desarrollo).
 - **RS2.2:** Los tokens JWT deben incluir expiración y firma HMAC-SHA256.
 - **RS2.3:** El header `X-Kmix-B64u` debe validarse en el servidor para operaciones de vault.
+- **RS2.4:** El sistema debe soportar TLS 1.2 y TLS 1.3 para conexiones HTTPS.
 
 #### RS3: Gestión de Accesos
 - **RS3.1:** Las rutas de vault deben requerir autenticación JWT válida.
@@ -156,6 +165,13 @@ Diseñar e implementar un gestor de contraseñas con arquitectura zero-knowledge
 - **RS5.2:** El servidor nunca debe tener acceso al secreto del dispositivo.
 - **RS5.3:** El servidor nunca debe tener acceso a `K_mix` (solo lo recibe temporalmente en headers).
 - **RS5.4:** El servidor nunca debe almacenar contraseñas en texto plano.
+
+#### RS6: Análisis y Monitoreo de Seguridad
+- **RS6.1:** El código del backend debe analizarse periódicamente con herramientas de análisis estático (Bandit).
+- **RS6.2:** Las dependencias deben mantenerse actualizadas para evitar CVEs conocidas.
+- **RS6.3:** El sistema debe contar con un plan de respuesta a incidentes documentado.
+- **RS6.4:** Los certificados SSL deben generarse con RSA 2048 bits mínimo.
+- **RS6.5:** El análisis de seguridad debe reportar 0 vulnerabilidades críticas o altas.
 
 ### 3.3 Requerimientos No Funcionales
 
@@ -1149,6 +1165,103 @@ volumes:
 sudo chown -R 1000:1000 ./data
 ```
 
+### 8.9 Guía Rápida de Instalación para Otros Desarrolladores
+
+**Requisitos previos:**
+- Docker Desktop instalado y corriendo
+- Git instalado
+- OpenSSL instalado (para generar certificados)
+
+**Pasos de instalación:**
+
+1. **Clonar el repositorio:**
+```bash
+git clone <URL_DEL_REPO>
+cd etica_seguridad
+```
+
+2. **Generar certificados SSL:**
+
+**Windows:**
+```bash
+generate-ssl.bat
+```
+
+**Linux/Mac:**
+```bash
+chmod +x generate-ssl.sh
+./generate-ssl.sh
+```
+
+Esto creará los archivos en `ssl/server.key` y `ssl/server.crt`.
+
+3. **Construir y levantar el contenedor:**
+```bash
+docker-compose up --build -d
+```
+
+Este comando:
+- Descarga la imagen base de Python
+- Instala todas las dependencias (~2-3 minutos primera vez)
+- Descarga el modelo de InsightFace (~100MB primera vez)
+- Configura nginx con HTTP y HTTPS
+- Inicia los servicios
+
+4. **Verificar que esté corriendo:**
+```bash
+docker ps
+```
+
+Deberías ver:
+```
+CONTAINER ID   IMAGE                              COMMAND           STATUS         PORTS
+xxx            etica_seguridad-password-manager   "/app/start.sh"   Up 2 minutes   0.0.0.0:8080->80/tcp, 0.0.0.0:8443->443/tcp
+```
+
+5. **Acceder a la aplicación:**
+
+**Opción 1 - HTTP (recomendado para pruebas rápidas):**
+- Abrir navegador en: http://localhost:8080
+
+**Opción 2 - HTTPS (para demostrar SSL):**
+- Abrir navegador en: https://localhost:8443
+- Hacer clic en "Avanzado" cuando aparezca la advertencia
+- Hacer clic en "Continuar a localhost (no seguro)"
+- La aplicación cargará normalmente
+
+6. **Ver logs en tiempo real:**
+```bash
+docker logs -f password-manager
+```
+
+**Comandos útiles:**
+
+```bash
+# Detener el contenedor
+docker-compose down
+
+# Reiniciar el contenedor
+docker-compose restart
+
+# Ver logs
+docker logs password-manager --tail 50
+
+# Reconstruir si cambias código
+docker-compose up --build -d
+
+# Ver solo logs de seguridad
+docker logs password-manager 2>&1 | grep -E "INFO|WARNING|ERROR"
+```
+
+**Solución de problemas comunes:**
+
+| Problema | Solución |
+|----------|----------|
+| Puerto 8080 ya en uso | Cambiar puerto en docker-compose.yml: `"8081:80"` |
+| Error al generar certificados | Verificar que OpenSSL esté instalado: `openssl version` |
+| Docker no inicia | Verificar que Docker Desktop esté corriendo |
+| Modelo de InsightFace se descarga cada vez | Los volúmenes Docker están guardando el cache correctamente |
+
 ---
 
 ## 9. Análisis de Riesgos y Mitigación
@@ -1219,6 +1332,372 @@ Conclusión: Compromiso de DB solo expone datos cifrados inútiles.
 - **Bloqueo temporal:** Cuenta bloqueada por 30 min tras 10 intentos fallidos
 
 **Estado:** Parcialmente mitigado
+
+### 9.3 Certificados SSL Autofirmados
+
+**Descripción:** El proyecto implementa certificados SSL autofirmados para habilitar comunicación HTTPS en entornos de desarrollo y demostración.
+
+**Implementación:**
+
+El proyecto incluye scripts automatizados para generar certificados SSL:
+
+**Para Linux/Mac:**
+```bash
+./generate-ssl.sh
+```
+
+**Para Windows:**
+```bash
+generate-ssl.bat
+```
+
+**Configuración del certificado:**
+
+El certificado generado incluye:
+- **Algoritmo:** RSA 2048 bits
+- **Validez:** 365 días desde la generación
+- **Subject:** C=ES, ST=Madrid, L=Madrid, O=Password Manager, OU=Development, CN=localhost
+- **Key Usage:** Digital Signature, Key Encipherment, Key Agreement (critical)
+- **Extended Key Usage:** TLS Web Server Authentication
+- **Subject Alternative Names (SAN):**
+  - DNS: localhost, *.localhost
+  - IP: 127.0.0.1, ::1
+
+**Archivos generados:**
+```
+ssl/
+├── server.key      # Clave privada RSA
+├── server.crt      # Certificado público X.509
+└── openssl.cnf     # Configuración OpenSSL
+```
+
+**Integración con Docker:**
+
+El [docker-compose.yml](docker-compose.yml#L14) monta el volumen SSL de manera read-only:
+```yaml
+volumes:
+  - ./ssl:/app/ssl:ro
+```
+
+El [Dockerfile](Dockerfile#L127-L137) configura nginx para servir tanto HTTP como HTTPS:
+- **Puerto 80:** HTTP (desarrollo)
+- **Puerto 443:** HTTPS con certificado autofirmado
+
+**Acceso a la aplicación:**
+- HTTP: http://localhost:8080
+- HTTPS: https://localhost:8443
+
+**⚠️ Advertencia de seguridad:**
+
+Los certificados autofirmados NO son confiables para navegadores. Al acceder por HTTPS, el navegador mostrará una advertencia de seguridad. **Esto es NORMAL y ESPERADO en desarrollo.**
+
+**Cómo acceder con HTTPS:**
+1. Navegar a: https://localhost:8443
+2. Ver advertencia del navegador (ej: "Tu conexión no es privada" o "ERR_SSL_KEY_USAGE_INCOMPATIBLE")
+3. Hacer clic en **"Avanzado"** o **"Advanced"**
+4. Hacer clic en **"Continuar a localhost (no seguro)"** o **"Proceed to localhost (unsafe)"**
+5. La aplicación cargará normalmente
+
+**¿Por qué aparece el triángulo rojo o advertencia?**
+
+El navegador muestra esta advertencia porque:
+- El certificado es **autofirmado** (no emitido por una Autoridad Certificadora confiable)
+- El navegador no puede verificar la identidad del servidor
+- **Sin embargo, la conexión SÍ está cifrada con TLS 1.2/1.3**
+
+**Para el proyecto académico:** Esta advertencia demuestra que el HTTPS está funcionando correctamente. El objetivo es mostrar que se implementó SSL/TLS, no tener un certificado de producción.
+
+**Para producción**, se debe:
+1. Obtener certificado de una CA confiable (Let's Encrypt, DigiCert, etc.)
+2. Configurar renovación automática de certificados
+3. Implementar HSTS (HTTP Strict Transport Security)
+4. Redirigir automáticamente HTTP → HTTPS
+
+**Estado:** Implementado para desarrollo
+
+### 9.4 Análisis de Seguridad con Bandit
+
+**Descripción:** Se utilizó Bandit, una herramienta de análisis estático de seguridad para Python, para identificar vulnerabilidades comunes en el código del backend.
+
+**Instalación y ejecución:**
+
+```bash
+# Instalar Bandit
+pip install bandit
+
+# Análisis completo del backend
+bandit -r backend/
+
+# Generar reporte HTML
+bandit -r backend/ -f html -o backend/bandit-report.html
+
+# Generar reporte JSON
+bandit -r backend/ -f json -o backend/bandit-report.json
+```
+
+**Resultados del análisis:**
+
+| Métrica | Valor |
+|---------|-------|
+| Líneas de código analizadas | 493 |
+| Archivos analizados | 8 |
+| Issues de severidad ALTA | 0 |
+| Issues de severidad MEDIA | 0 |
+| Issues de severidad BAJA | 1 |
+| Total de issues | 1 |
+
+**Detalle de issues encontrados:**
+
+#### Issue #1: Try-Except-Continue (B112)
+
+**Ubicación:** [backend/app.py:148](backend/app.py#L148)
+
+**Código:**
+```python
+except Exception:
+    # Si falla el descifrado, saltamos esta entrada
+    continue
+```
+
+**Severidad:** Baja
+**Confianza:** Alta
+**CWE:** CWE-703 (Improper Check or Handling of Exceptional Conditions)
+
+**Justificación:** Este patrón es intencional y seguro en este contexto. El código itera sobre las entradas del vault e intenta descifrarlas. Si una entrada no puede ser descifrada (por ejemplo, debido a corrupción de datos o cambio de clave), es apropiado omitirla y continuar con la siguiente entrada en lugar de romper toda la operación de listado.
+
+**Mitigación:** Considerada aceptable. En una mejora futura, se podría agregar logging para auditar entradas que fallan el descifrado.
+
+**Análisis por archivo:**
+
+| Archivo | LOC | Issues |
+|---------|-----|--------|
+| [backend/app.py](backend/app.py) | 170 | 1 (BAJA) |
+| [backend/auth.py](backend/auth.py) | 70 | 0 |
+| [backend/crypto.py](backend/crypto.py) | 53 | 0 |
+| [backend/database.py](backend/database.py) | 16 | 0 |
+| [backend/face_rec.py](backend/face_rec.py) | 62 | 0 |
+| [backend/migrate_to_full_encryption.py](backend/migrate_to_full_encryption.py) | 44 | 0 |
+| [backend/models.py](backend/models.py) | 24 | 0 |
+| [backend/schemas.py](backend/schemas.py) | 54 | 0 |
+
+**Conclusión:**
+
+El análisis de Bandit demuestra una **excelente postura de seguridad** en el código Python del backend:
+- ✅ Sin vulnerabilidades críticas (0 HIGH)
+- ✅ Sin vulnerabilidades medias (0 MEDIUM)
+- ✅ Solo 1 issue de baja severidad, justificada y aceptable
+- ✅ Código limpio sin uso de funciones inseguras (eval, exec, pickle inseguro, etc.)
+- ✅ Sin inyecciones SQL (uso correcto de SQLAlchemy ORM)
+- ✅ Sin problemas de criptografía débil
+
+**Estado:** Análisis completado - Código seguro
+
+### 9.5 Plan de Respuesta a Incidentes
+
+**Descripción:** Plan básico de respuesta ante incidentes de seguridad detectados en el sistema.
+
+#### Clasificación de Incidentes
+
+| Tipo | Severidad | Ejemplo |
+|------|-----------|---------|
+| **Tipo 1:** Acceso no autorizado | CRÍTICA | Compromiso de cuenta de usuario, acceso a base de datos |
+| **Tipo 2:** Pérdida de disponibilidad | ALTA | Caída del servicio, DoS, error crítico en backend |
+| **Tipo 3:** Fuga de información | CRÍTICA | Exposición de embeddings faciales, device_secret, base de datos |
+| **Tipo 4:** Vulnerabilidad detectada | MEDIA-ALTA | CVE en dependencias, bug de seguridad en código |
+| **Tipo 5:** Anomalía de comportamiento | MEDIA | Picos inusuales de tráfico, intentos de fuerza bruta |
+
+#### Protocolo de Respuesta (PICERL)
+
+**1. Preparación (Preparation)**
+- Mantener backups automáticos de base de datos (`./data/server.db`)
+- Documentar arquitectura y flujos de datos críticos
+- Tener lista de contactos de administradores
+- Mantener logs de acceso (implementar en futuro)
+
+**2. Identificación (Identification)**
+- Monitorear logs de Docker: `docker logs password-manager`
+- Revisar intentos fallidos de autenticación facial
+- Verificar integridad de volúmenes Docker
+- Ejecutar análisis periódicos con Bandit
+
+**3. Contención (Containment)**
+
+**Contención inmediata:**
+- Detener contenedor comprometido: `docker-compose down`
+- Revocar tokens JWT activos (reiniciar backend)
+- Bloquear IPs sospechosas en firewall/nginx
+
+**Contención completa:**
+- Aislar servidor de red externa
+- Preservar evidencia (copiar logs, DB, volúmenes)
+- Forzar cambio de contraseñas de usuarios afectados
+
+**4. Erradicación (Eradication)**
+- Identificar causa raíz del incidente
+- Aplicar parches de seguridad en dependencias
+- Revisar código con Bandit y análisis manual
+- Regenerar certificados SSL si fueron comprometidos
+- Eliminar backdoors o código malicioso
+
+**5. Recuperación (Recovery)**
+- Restaurar desde backup verificado: `cp backup/server.db data/server.db`
+- Reconstruir imagen Docker desde fuente confiable: `docker-compose build --no-cache`
+- Verificar integridad de certificados SSL
+- Realizar pruebas de funcionalidad completa
+- Monitorear sistema intensivamente post-incidente
+
+**6. Lecciones Aprendidas (Lessons Learned)**
+- Documentar cronología del incidente
+- Identificar fallas en controles de seguridad
+- Actualizar políticas y procedimientos
+- Implementar controles adicionales para prevenir recurrencia
+- Compartir aprendizajes con equipo de desarrollo
+
+#### Comunicación de Incidentes
+
+**Interno:**
+1. Notificar a administradores del sistema inmediatamente
+2. Documentar acciones tomadas en tiempo real
+3. Escalar a nivel superior si severidad ≥ ALTA
+
+**Externo (si aplica):**
+1. Notificar a usuarios afectados dentro de 24-48 horas
+2. Proporcionar recomendaciones de mitigación
+3. Reportar a autoridades regulatorias si hay exposición de datos personales (GDPR/LOPD)
+
+#### Contactos de Emergencia
+
+| Rol | Contacto | Responsabilidad |
+|-----|----------|----------------|
+| Administrador Principal | jorge.quenta@utec.edu.pe | Decisión final sobre respuesta |
+| Desarrollador Backend | stuart.arteaga@utec.edu.pe | Análisis técnico y mitigación |
+| Soporte Técnico | N/A | Comunicación con usuarios (si se escala a producción) |
+
+#### Herramientas de Respuesta
+
+| Herramienta | Uso |
+|-------------|-----|
+| `docker logs` | Revisión de logs en tiempo real |
+| `bandit` | Análisis estático de seguridad |
+| `openssl` | Verificación de certificados SSL |
+| `sqlite3` | Inspección de base de datos |
+| GitHub Issues | Tracking de vulnerabilidades |
+
+**Estado:** Plan documentado e implementado con logging básico
+
+### 9.6 Sistema de Logging de Seguridad
+
+**Descripción:** Sistema de logging estructurado para registrar eventos de seguridad críticos en el backend.
+
+#### Implementación
+
+El proyecto implementa logging usando el módulo `logging` de Python con formato estandarizado:
+
+```python
+import logging
+
+logging.basicConfig(
+    level=logging.INFO,
+    format='%(asctime)s - %(name)s - %(levelname)s - %(message)s'
+)
+logger = logging.getLogger(__name__)
+```
+
+#### Eventos Registrados
+
+**1. Autenticación y Registro ([backend/auth.py](backend/auth.py))**
+
+| Evento | Nivel | Ejemplo de Log |
+|--------|-------|---------------|
+| Registro exitoso | INFO | `Usuario registrado exitosamente: user@example.com` |
+| Email ya existe | WARNING | `Registro fallido: Email ya existe - user@example.com` |
+| Rostro no detectado | WARNING | `Registro fallido: No se detectó rostro - user@example.com` |
+| Error procesando imagen | ERROR | `Registro fallido: Error procesando imagen para user@example.com - [error]` |
+| Login exitoso | INFO | `Login exitoso: user@example.com` |
+| Usuario no encontrado | WARNING | `Login fallido: Usuario no encontrado - user@example.com` |
+| Contraseña incorrecta | WARNING | `Login fallido: Contraseña incorrecta - user@example.com` |
+
+**2. Verificación Facial ([backend/app.py](backend/app.py))**
+
+| Evento | Nivel | Ejemplo de Log |
+|--------|-------|---------------|
+| Verificación exitosa | INFO | `Verificación facial exitosa: user@example.com (similaridad: 0.823)` |
+| Sin embedding registrado | WARNING | `Verificación facial fallida: Usuario sin embedding registrado - user@example.com` |
+| Rostro no detectado | WARNING | `Verificación facial fallida: No se detectó rostro - user@example.com` |
+| Similaridad insuficiente | WARNING | `Verificación facial fallida: Similaridad insuficiente - user@example.com (similaridad: 0.312, threshold: 0.45)` |
+| Error en verificación | ERROR | `Error durante verificación facial para user@example.com: [error]` |
+
+**3. Operaciones del Vault ([backend/app.py](backend/app.py))**
+
+| Evento | Nivel | Ejemplo de Log |
+|--------|-------|---------------|
+| Entrada creada | INFO | `Entrada creada: ID=42, Usuario=user@example.com, Título=Gmail` |
+| Entrada actualizada | INFO | `Entrada actualizada: ID=42, Usuario=user@example.com, Título=Gmail Updated` |
+| Entrada eliminada | INFO | `Entrada eliminada: ID=42, Usuario=user@example.com` |
+| Entrada no encontrada | WARNING | `Actualización fallida: Entrada no encontrada - ID=99, Usuario=user@example.com` |
+| Error al descifrar | ERROR | `Actualización fallida: Error al descifrar - ID=42, Usuario=user@example.com` |
+
+#### Visualización de Logs
+
+**En desarrollo (Docker):**
+```bash
+# Ver logs en tiempo real
+docker logs -f password-manager
+
+# Ver últimas 100 líneas
+docker logs --tail 100 password-manager
+
+# Filtrar por errores
+docker logs password-manager 2>&1 | grep ERROR
+
+# Filtrar por usuario específico
+docker logs password-manager 2>&1 | grep "user@example.com"
+```
+
+**Ejemplo de salida:**
+```
+2025-01-27 15:23:41,234 - auth - INFO - Usuario registrado exitosamente: alice@utec.edu.pe
+2025-01-27 15:24:10,567 - auth - INFO - Login exitoso: alice@utec.edu.pe
+2025-01-27 15:24:15,891 - app - INFO - Verificación facial exitosa: alice@utec.edu.pe (similaridad: 0.823)
+2025-01-27 15:24:20,123 - app - INFO - Entrada creada: ID=1, Usuario=alice@utec.edu.pe, Título=Gmail
+2025-01-27 15:25:30,456 - auth - WARNING - Login fallido: Contraseña incorrecta - bob@utec.edu.pe
+2025-01-27 15:26:00,789 - app - WARNING - Verificación facial fallida: Similaridad insuficiente - charlie@utec.edu.pe (similaridad: 0.312, threshold: 0.45)
+```
+
+#### Niveles de Logging
+
+| Nivel | Uso | Cantidad en Implementación |
+|-------|-----|---------------------------|
+| **INFO** | Operaciones exitosas | 6 eventos |
+| **WARNING** | Intentos fallidos (no críticos) | 8 eventos |
+| **ERROR** | Errores que requieren atención | 3 eventos |
+
+#### Análisis de Seguridad con Logs
+
+**Detección de patrones sospechosos:**
+
+```bash
+# Múltiples intentos de login fallidos (posible fuerza bruta)
+docker logs password-manager 2>&1 | grep "Login fallido" | grep "bob@utec.edu.pe" | wc -l
+
+# Intentos de verificación facial fallidos (posible suplantación)
+docker logs password-manager 2>&1 | grep "Verificación facial fallida"
+
+# Errores de descifrado (posible ataque de K_mix)
+docker logs password-manager 2>&1 | grep "Error al descifrar"
+```
+
+#### Mejoras Futuras
+
+Para producción se recomienda:
+1. **Persistencia de logs:** Usar volumen Docker para guardar logs (`-v ./logs:/var/log/app`)
+2. **Rotación de logs:** Implementar rotación diaria con `logging.handlers.RotatingFileHandler`
+3. **Logs estructurados:** Usar JSON para logs (`python-json-logger`) facilitando parsing
+4. **Centralización:** Enviar logs a sistema centralizado (ELK Stack, Splunk, Datadog)
+5. **Alertas:** Configurar alertas automáticas para eventos WARNING/ERROR repetidos
+6. **SIEM Integration:** Integrar con Security Information and Event Management (SIEM)
+
+**Estado:** Implementado y funcional
 
 ---
 
@@ -1844,10 +2323,6 @@ docker compose up -d
 - Inicio del contenedor: ~5-10 segundos
 
 ### 12.5 Contacto y Soporte
-
-**Autores:** 
-- Jorge Eduardo Quenta Solis
-- Stuart Diego Arteaga Montes
 
 **Emails:** 
 - jorge.quenta@utec.edu.pe
