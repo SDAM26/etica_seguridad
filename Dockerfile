@@ -77,14 +77,7 @@ server {
     listen 80;
     server_name _;
 
-    # Servir frontend estático
-    location / {
-        root /app/frontend;
-        index index.html;
-        try_files \$uri \$uri/ /index.html;
-    }
-
-    # Proxy para API del backend
+    # Proxy para API del backend (deben ir ANTES de location /)
     location /auth {
         proxy_pass http://127.0.0.1:8000;
         proxy_set_header Host \$host;
@@ -119,6 +112,19 @@ server {
         proxy_pass http://127.0.0.1:8000;
         proxy_set_header Host \$host;
         proxy_set_header X-Real-IP \$remote_addr;
+    }
+
+    location /openapi.json {
+        proxy_pass http://127.0.0.1:8000;
+        proxy_set_header Host \$host;
+        proxy_set_header X-Real-IP \$remote_addr;
+    }
+
+    # Servir frontend estático (debe ir AL FINAL)
+    location / {
+        root /app/frontend;
+        index index.html;
+        try_files \$uri \$uri/ /index.html;
     }
 }
 
@@ -136,14 +142,7 @@ server {
     ssl_ciphers HIGH:!aNULL:!MD5;
     ssl_prefer_server_ciphers on;
 
-    # Servir frontend estático
-    location / {
-        root /app/frontend;
-        index index.html;
-        try_files \$uri \$uri/ /index.html;
-    }
-
-    # Proxy para API del backend
+    # Proxy para API del backend (deben ir ANTES de location /)
     location /auth {
         proxy_pass http://127.0.0.1:8000;
         proxy_set_header Host \$host;
@@ -178,6 +177,19 @@ server {
         proxy_pass http://127.0.0.1:8000;
         proxy_set_header Host \$host;
         proxy_set_header X-Real-IP \$remote_addr;
+    }
+
+    location /openapi.json {
+        proxy_pass http://127.0.0.1:8000;
+        proxy_set_header Host \$host;
+        proxy_set_header X-Real-IP \$remote_addr;
+    }
+
+    # Servir frontend estático (debe ir AL FINAL)
+    location / {
+        root /app/frontend;
+        index index.html;
+        try_files \$uri \$uri/ /index.html;
     }
 }
 EOF
