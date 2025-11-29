@@ -1571,7 +1571,6 @@ El análisis de Bandit demuestra una **excelente postura de seguridad** en el c�
 |-----|----------|----------------|
 | Administrador Principal | jorge.quenta@utec.edu.pe | Decisión final sobre respuesta |
 | Desarrollador Backend | stuart.arteaga@utec.edu.pe | Análisis técnico y mitigación |
-| Soporte Técnico | N/A | Comunicación con usuarios (si se escala a producción) |
 
 #### Herramientas de Respuesta
 
